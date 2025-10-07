@@ -3,20 +3,28 @@ using UnityEngine;
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
-    public float walkSpeed = 4f;   // base walk speed
-    public float runSpeed = 6f;    // run speed
+    public float CurrentSpeed { get; private set; } 
+    public float walkSpeed = 4f;
+    public float runSpeed = 6f;
     public float gravity = -9.81f;
+    public float jumpHeight = 1.5f;
+
+    [Header("Slope Settings")]
+    public float slopeLimit = 60f;  // Maximum climb-able slope angle
 
     private CharacterController controller;
     private float verticalVelocity = 0f;
     private Animator animator;
-
-    private PlayerCamera playerCamera; //ref to cam
+    private PlayerCamera playerCamera;
 
     void Start()
     {
         controller = GetComponent<CharacterController>();
-        animator = GetComponentInChildren<Animator>(); // finds Animator on model
+        animator = GetComponentInChildren<Animator>();
+        playerCamera = Camera.main.GetComponent<PlayerCamera>();
+        
+        // Set the CharacterController's slope limit
+        controller.slopeLimit = slopeLimit;
     }
 
     void Update()
@@ -24,6 +32,7 @@ public class PlayerController : MonoBehaviour
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
+        // Camera-relative movement
         Vector3 camForward = Camera.main.transform.forward;
         Vector3 camRight = Camera.main.transform.right;
         camForward.y = 0;
@@ -33,17 +42,15 @@ public class PlayerController : MonoBehaviour
 
         Vector3 move = camRight * h + camForward * v;
 
-        // Run toggle
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
         float moveSpeed = isRunning ? runSpeed : walkSpeed;
 
-        // Rotate model towards direction it is moving
+        // Rotate toward movement direction
         if (move.magnitude > 0.1f)
         {
             Quaternion targetRot = Quaternion.LookRotation(move);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 10f * Time.deltaTime);
         }
-
         else if (playerCamera && playerCamera.IsFirstPerson())
         {
             Vector3 camDir = Camera.main.transform.forward;
@@ -56,19 +63,39 @@ public class PlayerController : MonoBehaviour
                     10f * Time.deltaTime
                 );
             }
-        } //first person camera orientation
+        }
 
-        // Gravity
-        if (controller.isGrounded && verticalVelocity < 0)
-            verticalVelocity = -2f;
-        verticalVelocity += gravity * Time.deltaTime;
+        // Jump + Gravity
+        if (controller.isGrounded)
+        {
+            if (verticalVelocity < 0)
+                verticalVelocity = -2f;
 
-        // Apply final movement
+            // Only allow jumping on walkable slopes
+            if (Input.GetButtonDown("Jump") && !IsOnSteepSlope())
+                verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        }
+        else
+        {
+            verticalVelocity += gravity * Time.deltaTime;
+        }
+
+        // Apply movement
         Vector3 finalMove = move * moveSpeed + Vector3.up * verticalVelocity;
         controller.Move(finalMove * Time.deltaTime);
 
-        // Set animation to current velocity
-        float currentSpeed = new Vector3(move.x, 0, move.z).magnitude * moveSpeed;
-        animator.SetFloat("Speed", currentSpeed);
+        // Animate
+        CurrentSpeed = new Vector3(move.x, 0, move.z).magnitude * moveSpeed;
+        animator.SetFloat("Speed", CurrentSpeed);
+    }
+
+    bool IsOnSteepSlope()
+    {
+        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, controller.height / 2 + 0.5f))
+        {
+            float angle = Vector3.Angle(hit.normal, Vector3.up);
+            return angle > slopeLimit;
+        }
+        return false;
     }
 }

@@ -11,34 +11,44 @@ public class PlayerCamera : MonoBehaviour
     public float orbitSpeed = 150f;
     public float lookSpeed = 2f;
 
+    [Header("Collision Settings")]
+    public float collisionRadius = 0.2f;      // Sphere collision radius for collision check
+    public float collisionSmoothing = 5f;     // How fast camera adjusts to collisions
+    public float collisionMinDistance = 1f;   // Minimum distance when colliding with terrain
+
     private float yaw = 0f;
     private float pitch = 15f;
-
+    private float currentDistance; 
     private Camera cam;
     private int defaultCullingMask;
     private int playerModelMask;
+    private LayerMask collisionLayerMask; 
 
     void Start()
     {
         cam = GetComponent<Camera>();
         defaultCullingMask = cam.cullingMask;
-        playerModelMask = 1 << LayerMask.NameToLayer("PlayerModel"); 
+        playerModelMask = 1 << LayerMask.NameToLayer("PlayerModel");
+        
+        // Collide with everything EXCEPT PlayerModel layer the player pack is assigned to
+        collisionLayerMask = ~playerModelMask;
+        
+        currentDistance = distance;
     }
 
     void LateUpdate()
     {
         if (!target) return;
 
-        // --- Zoom ---
+        // Zoom 
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         distance -= scroll * zoomSpeed;
         distance = Mathf.Clamp(distance, minDistance, maxDistance);
 
-        // --- Blend factor (0 = third person, 1 = first person) ---
         float blend = Mathf.InverseLerp(maxDistance, minDistance, distance);
 
-        // --- Input handling ---
-        if (blend > 0.95f) // practically in first-person
+        // Input handling
+        if (blend > 0.95f)
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
@@ -50,7 +60,7 @@ public class PlayerCamera : MonoBehaviour
             pitch -= mouseY;
             pitch = Mathf.Clamp(pitch, -80f, 80f);
 
-            // Hide the PlayerModel layer
+            // Hide the PlayerModel layer for 1st person
             cam.cullingMask = defaultCullingMask & ~playerModelMask;
         }
         else
@@ -72,16 +82,34 @@ public class PlayerCamera : MonoBehaviour
             cam.cullingMask = defaultCullingMask;
         }
 
-        // --- Rotation ---
+        // Rotation 
         Quaternion rotation = Quaternion.Euler(pitch, yaw, 0);
 
-        // --- Third-person offset ---
-        Vector3 thirdPersonPos = target.position + rotation * new Vector3(0, 0, -distance);
+        //Camera Collision Detection 
+        Vector3 desiredDirection = rotation * Vector3.back;
+        float targetDistance = distance;
 
-        // --- First-person offset (exact head) ---
+        // Only check collision in third-person mode
+        if (blend < 0.95f)
+        {
+            RaycastHit hit;
+            if (Physics.SphereCast(target.position, collisionRadius, desiredDirection, 
+                out hit, distance, collisionLayerMask))
+            {
+                // Reduce distance to not below threshold for 1st person
+                targetDistance = Mathf.Max(hit.distance - collisionRadius, collisionMinDistance);
+            }
+        }
+
+        currentDistance = Mathf.Lerp(currentDistance, targetDistance, Time.deltaTime * collisionSmoothing);
+
+        //Third-person offset
+        Vector3 thirdPersonPos = target.position + rotation * new Vector3(0, 0, -currentDistance);
+
+        //First-person offset 
         Vector3 firstPersonPos = target.position;
 
-        // --- Blend between them ---
+        // Blend for going from 3rd to 1st person
         transform.position = Vector3.Lerp(thirdPersonPos, firstPersonPos, blend);
         transform.rotation = rotation;
     }
