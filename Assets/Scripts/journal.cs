@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+/*using System.Collections.Generic;
 using UnityEngine;
 
 public class JournalSystem : MonoBehaviour
@@ -285,3 +285,4 @@ public class JournalSystem : MonoBehaviour
 		}
 	}
 }
+*/
