@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60bf832aac1a3204a801cbcce682b40d, type: 3}
   m_Name: Ginger_Journal
   m_EditorClassIdentifier: 
-  plantID: ginger
+  plantID: mint
   displayName: Ginjah
   icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
   plantPhoto: {fileID: 10911, guid: 0000000000000000f000000000000000, type: 0}
