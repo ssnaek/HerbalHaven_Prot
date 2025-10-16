@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &9212748749089317443
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3577075977239351974}
+  - component: {fileID: 2733507093232356}
+  m_Layer: 6
+  m_Name: MintNode
+  m_TagString: Interactable
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3577075977239351974
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9212748749089317443}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -8.55, y: 1.11, z: 6.74}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2733507093232356
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9212748749089317443}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03e2654c4d7d7fd4fab0a62f89e22d60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  plantInfo:
+    plantName: Red Flower
+    plantID: red_flower
+    icon: {fileID: 10917, guid: 0000000000000000f000000000000000, type: 0}
+    maxStack: 99
+    yieldPerPick: 1
+    plantPrefab: {fileID: 6140300859535827464, guid: e04639fe875fae142a9b5a2c27305de0, type: 3}
+  maxDailyPlants: 3
+  spawnRadius: 4
+  addColliderToPlants: 1
+  plantColliderRadius: 0.5
+  overharvestThreshold: 3
+  regrowthDelay: 10
+  showDebugLogs: 1

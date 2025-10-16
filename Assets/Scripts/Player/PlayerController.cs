@@ -3,14 +3,16 @@ using UnityEngine;
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
-    public float CurrentSpeed { get; private set; } 
+    [Header("Movement Settings")]
     public float walkSpeed = 4f;
     public float runSpeed = 6f;
     public float gravity = -9.81f;
     public float jumpHeight = 1.5f;
 
     [Header("Slope Settings")]
-    public float slopeLimit = 60f;  // Maximum climb-able slope angle
+    public float slopeLimit = 60f;
+
+    public float CurrentSpeed { get; private set; }
 
     private CharacterController controller;
     private float verticalVelocity = 0f;
@@ -21,18 +23,25 @@ public class PlayerController : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
         animator = GetComponentInChildren<Animator>();
-        playerCamera = Camera.main.GetComponent<PlayerCamera>();
-        
-        // Set the CharacterController's slope limit
+        playerCamera = Camera.main ? Camera.main.GetComponent<PlayerCamera>() : null;
+
         controller.slopeLimit = slopeLimit;
     }
 
     void Update()
     {
+        HandleMovement();
+        HandleRotation();
+        HandleJumpAndGravity();
+        UpdateAnimations();
+    }
+
+    // ---------------- Movement ----------------
+    void HandleMovement()
+    {
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
-        // Camera-relative movement
         Vector3 camForward = Camera.main.transform.forward;
         Vector3 camRight = Camera.main.transform.right;
         camForward.y = 0;
@@ -41,14 +50,25 @@ public class PlayerController : MonoBehaviour
         camRight.Normalize();
 
         Vector3 move = camRight * h + camForward * v;
-
         bool isRunning = Input.GetKey(KeyCode.LeftShift);
         float moveSpeed = isRunning ? runSpeed : walkSpeed;
 
-        // Rotate toward movement direction
-        if (move.magnitude > 0.1f)
+        CurrentSpeed = new Vector3(move.x, 0f, move.z).magnitude * moveSpeed;
+
+        Vector3 finalMove = move * moveSpeed + Vector3.up * verticalVelocity;
+        controller.Move(finalMove * Time.deltaTime);
+    }
+
+    // ---------------- Rotation ----------------
+    void HandleRotation()
+    {
+        Vector3 inputDir = new Vector3(Input.GetAxis("Horizontal"), 0f, Input.GetAxis("Vertical"));
+        Vector3 moveDir = Camera.main.transform.TransformDirection(inputDir);
+        moveDir.y = 0f;
+
+        if (moveDir.magnitude > 0.1f)
         {
-            Quaternion targetRot = Quaternion.LookRotation(move);
+            Quaternion targetRot = Quaternion.LookRotation(moveDir);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 10f * Time.deltaTime);
         }
         else if (playerCamera && playerCamera.IsFirstPerson())
@@ -56,22 +76,18 @@ public class PlayerController : MonoBehaviour
             Vector3 camDir = Camera.main.transform.forward;
             camDir.y = 0f;
             if (camDir.sqrMagnitude > 0.01f)
-            {
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    Quaternion.LookRotation(camDir),
-                    10f * Time.deltaTime
-                );
-            }
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(camDir), 10f * Time.deltaTime);
         }
+    }
 
-        // Jump + Gravity
+    // ---------------- Jump + Gravity ----------------
+    void HandleJumpAndGravity()
+    {
         if (controller.isGrounded)
         {
-            if (verticalVelocity < 0)
+            if (verticalVelocity < 0f)
                 verticalVelocity = -2f;
 
-            // Only allow jumping on walkable slopes
             if (Input.GetButtonDown("Jump") && !IsOnSteepSlope())
                 verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
         }
@@ -79,16 +95,16 @@ public class PlayerController : MonoBehaviour
         {
             verticalVelocity += gravity * Time.deltaTime;
         }
-
-        // Apply movement
-        Vector3 finalMove = move * moveSpeed + Vector3.up * verticalVelocity;
-        controller.Move(finalMove * Time.deltaTime);
-
-        // Animate
-        CurrentSpeed = new Vector3(move.x, 0, move.z).magnitude * moveSpeed;
-        animator.SetFloat("Speed", CurrentSpeed);
     }
 
+    // ---------------- Animation ----------------
+    void UpdateAnimations()
+    {
+        if (animator)
+            animator.SetFloat("Speed", CurrentSpeed);
+    }
+
+    // ---------------- Slope Check ----------------
     bool IsOnSteepSlope()
     {
         if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, controller.height / 2 + 0.5f))

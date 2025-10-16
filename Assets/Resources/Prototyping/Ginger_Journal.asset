@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60bf832aac1a3204a801cbcce682b40d, type: 3}
+  m_Name: Ginger_Journal
+  m_EditorClassIdentifier: 
+  plantID: mint
+  displayName: Ginjah
+  icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  plantPhoto: {fileID: 10911, guid: 0000000000000000f000000000000000, type: 0}
+  description: TESTY TEST TEST!!
+  scientificName: butt
+  habitat: idk
+  uses: fart i guess
