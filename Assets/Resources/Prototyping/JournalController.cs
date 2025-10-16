@@ -11,6 +11,10 @@ public class JournalController : MonoBehaviour
     [Header("Journal Panel")]
     [Tooltip("The entire journal UI (both pages)")]
     public GameObject journalPanel;
+    
+    [Header("Currency Display")]
+    public TextMeshProUGUI currencyText;
+    public int playerCurrency = 100; // Placeholder for testing
 
     [Header("Left Page - Plant Details")]
     public Image plantPhoto;
@@ -27,30 +31,124 @@ public class JournalController : MonoBehaviour
 
     [Header("Settings")]
     public KeyCode toggleKey = KeyCode.J;
+    public bool useAnimator = true; // If true, use JournalOpenAnimator; if false, instant toggle
 
     [Header("Debug")]
     public bool showDebugLogs = false;
 
+    private JournalOpenAnimator animator;
     private List<GameObject> listItems = new List<GameObject>();
     private string currentSelectedPlantID = null;
 
     void Start()
     {
+        // Find animator if using it
+        if (useAnimator)
+        {
+            animator = GetComponentInParent<JournalOpenAnimator>();
+            if (animator == null)
+            {
+                animator = FindObjectOfType<JournalOpenAnimator>();
+            }
+            
+            if (animator == null && showDebugLogs)
+            {
+                Debug.LogWarning("[Journal] useAnimator is true but no JournalOpenAnimator found!");
+            }
+        }
+
         // Subscribe to inventory changes
         if (InventorySystem.Instance != null)
         {
             InventorySystem.Instance.onInventoryChangedCallback += RefreshPlantList;
         }
 
-        // Start closed
-        journalPanel.SetActive(false);
+        // Initialize left page to show nothing
+        InitializeLeftPage();
+        
+        // Update currency display
+        UpdateCurrencyDisplay();
+
+        // Don't touch journalPanel active state - let JournalOpenAnimator handle it
+    }
+
+    void InitializeLeftPage()
+    {
+        // Hide all detail elements initially
+        if (plantPhoto != null)
+        {
+            plantPhoto.gameObject.SetActive(false);
+        }
+
+        if (plantNameText != null)
+        {
+            plantNameText.text = "";
+            plantNameText.gameObject.SetActive(false);
+        }
+
+        if (plantDescriptionText != null)
+        {
+            plantDescriptionText.text = "";
+            plantDescriptionText.gameObject.SetActive(false);
+        }
+
+        if (scientificNameText != null)
+        {
+            scientificNameText.gameObject.SetActive(false);
+        }
+
+        if (habitatText != null)
+        {
+            habitatText.gameObject.SetActive(false);
+        }
+
+        if (usesText != null)
+        {
+            usesText.gameObject.SetActive(false);
+        }
+
+        // Show only the "no selection" message
+        if (noSelectionMessage != null)
+        {
+            noSelectionMessage.SetActive(true);
+        }
+
+        if (showDebugLogs) Debug.Log("[Journal] Left page initialized - showing only NoSelectionMessage");
     }
 
     void Update()
     {
         if (Input.GetKeyDown(toggleKey))
         {
-            ToggleJournal();
+            if (useAnimator && animator != null)
+            {
+                // If animating open and not yet open, request cancel
+                if (animator.isAnimating && !animator.isOpen)
+                {
+                    animator.RequestCancel();
+                    if (showDebugLogs) Debug.Log("[Journal] Cancel requested during animation");
+                    return;
+                }
+                
+                // Normal toggle behavior
+                if (!animator.isAnimating)
+                {
+                    if (!animator.isOpen)
+                    {
+                        animator.PlayOpen();
+                        OnJournalOpened(); // Prepare content when opening
+                    }
+                    else
+                    {
+                        animator.PlayClose();
+                    }
+                }
+            }
+            else
+            {
+                // Instant toggle without animation
+                ToggleJournal();
+            }
         }
     }
 
@@ -61,16 +159,27 @@ public class JournalController : MonoBehaviour
 
         if (newState)
         {
-            RefreshPlantList();
-            
-            // Show placeholder on left page if nothing selected
-            if (currentSelectedPlantID == null)
-            {
-                ShowNoSelection();
-            }
+            OnJournalOpened();
         }
 
         if (showDebugLogs) Debug.Log($"[Journal] Toggled {(newState ? "OPEN" : "CLOSED")}");
+    }
+
+    /// <summary>
+    /// Called when journal is opened (either by animation or instant)
+    /// </summary>
+    public void OnJournalOpened()
+    {
+        RefreshPlantList();
+        UpdateCurrencyDisplay();
+        
+        // Show placeholder if nothing selected
+        if (currentSelectedPlantID == null)
+        {
+            ShowNoSelection();
+        }
+
+        if (showDebugLogs) Debug.Log("[Journal] OnJournalOpened - content refreshed");
     }
 
     public void RefreshPlantList()
@@ -184,10 +293,16 @@ public class JournalController : MonoBehaviour
         }
 
         if (plantNameText != null)
+        {
             plantNameText.text = plantData.displayName;
+            plantNameText.gameObject.SetActive(true);
+        }
 
         if (plantDescriptionText != null)
+        {
             plantDescriptionText.text = plantData.description;
+            plantDescriptionText.gameObject.SetActive(true);
+        }
 
         if (scientificNameText != null)
         {
@@ -238,10 +353,16 @@ public class JournalController : MonoBehaviour
             plantPhoto.gameObject.SetActive(false);
 
         if (plantNameText != null)
+        {
             plantNameText.text = "";
+            plantNameText.gameObject.SetActive(false);
+        }
 
         if (plantDescriptionText != null)
+        {
             plantDescriptionText.text = "";
+            plantDescriptionText.gameObject.SetActive(false);
+        }
 
         if (scientificNameText != null)
             scientificNameText.gameObject.SetActive(false);
@@ -256,6 +377,45 @@ public class JournalController : MonoBehaviour
         if (noSelectionMessage != null)
             noSelectionMessage.SetActive(true);
     }
+
+    void UpdateCurrencyDisplay()
+    {
+        if (currencyText != null)
+        {
+            currencyText.text = $"${playerCurrency}";
+        }
+    }
+
+    /// <summary>
+    /// Add currency (for shop system later)
+    /// </summary>
+    public void AddCurrency(int amount)
+    {
+        playerCurrency += amount;
+        UpdateCurrencyDisplay();
+        
+        if (showDebugLogs) Debug.Log($"[Journal] Added ${amount}. Total: ${playerCurrency}");
+    }
+
+    /// <summary>
+    /// Remove currency (for shop purchases)
+    /// </summary>
+    public bool RemoveCurrency(int amount)
+    {
+        if (playerCurrency >= amount)
+        {
+            playerCurrency -= amount;
+            UpdateCurrencyDisplay();
+            
+            if (showDebugLogs) Debug.Log($"[Journal] Spent ${amount}. Remaining: ${playerCurrency}");
+            return true;
+        }
+        
+        if (showDebugLogs) Debug.Log($"[Journal] Not enough currency. Need ${amount}, have ${playerCurrency}");
+        return false;
+    }
+
+    public int GetCurrency() => playerCurrency;
 
     void OnDestroy()
     {
