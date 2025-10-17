@@ -677,7 +677,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -130, y: -99}
-  m_SizeDelta: {x: 75, y: 75}
+  m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &678918617
 MonoBehaviour:
@@ -692,14 +692,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.50980395, g: 0.29803923, b: 0.27450982, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 12222e4e4d3e639448d24692496e3ae1, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -936,10 +936,10 @@ PrefabInstance:
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 3914693495914047331, guid: e6b0fc84af69d9747be169f8a1708f8e, type: 3}
       insertIndex: 1
-      addedObject: {fileID: 1631768248}
-    - targetCorrespondingSourceObject: {fileID: 3914693495914047331, guid: e6b0fc84af69d9747be169f8a1708f8e, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 1516520512}
+    - targetCorrespondingSourceObject: {fileID: 3914693495914047331, guid: e6b0fc84af69d9747be169f8a1708f8e, type: 3}
+      insertIndex: 2
+      addedObject: {fileID: 1631768248}
     - targetCorrespondingSourceObject: {fileID: 2026736044022746993, guid: e6b0fc84af69d9747be169f8a1708f8e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 510744554}
@@ -979,7 +979,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -130.00014, y: -99.000015}
+  m_AnchoredPosition: {x: -130.00014, y: -102}
   m_SizeDelta: {x: 50, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1070061508
