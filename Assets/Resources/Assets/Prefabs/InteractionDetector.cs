@@ -44,6 +44,12 @@ public class InteractionDetector : MonoBehaviour
         GameObject nearestObject = null;
         float nearestDistance = float.MaxValue;
 
+         if (ShopSystem.Instance != null && ShopSystem.Instance.IsShopOpen())
+        {
+            HidePrompt();
+            return;
+        }
+
         // Raycast forward from camera
         bool raycastHit = false;
         if (Camera.main != null)
@@ -107,6 +113,10 @@ public class InteractionDetector : MonoBehaviour
                 if (showDebugLogs) Debug.Log("[Detector] No interactable in range");
             }
         }
+
+
+
+
     }
 
     void ShowPrompt(IInteractable interactable)

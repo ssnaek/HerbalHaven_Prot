@@ -8,6 +8,8 @@ using System.Collections.Generic;
 /// </summary>
 public class JournalController : MonoBehaviour
 {
+    public static JournalController Instance { get; private set; }
+
     [Header("Journal Panel")]
     [Tooltip("The entire journal UI (both pages)")]
     public GameObject journalPanel;
@@ -42,6 +44,16 @@ public class JournalController : MonoBehaviour
 
     void Start()
     {
+        // Singleton
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Debug.LogWarning("[Journal] Multiple JournalControllers detected! Using first instance.");
+        }
+
         // Find animator if using it
         if (useAnimator)
         {
