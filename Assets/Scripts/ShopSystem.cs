@@ -7,6 +7,7 @@ using System.Collections.Generic;
 /// Manages the shop UI and purchasing logic.
 /// Left side: Scrollable item list
 /// Right side: Selected item details with buy button
+/// Now supports UIOpenAnimator for slide-down animation.
 /// </summary>
 public class ShopSystem : MonoBehaviour
 {
@@ -26,7 +27,7 @@ public class ShopSystem : MonoBehaviour
     public TextMeshProUGUI itemPriceText;
     public Button buyButton;
     public TextMeshProUGUI buyButtonText;
-    public GameObject noSelectionMessage; // "Select an item" placeholder
+    public GameObject noSelectionMessage;
 
     [Header("Currency Display")]
     public TextMeshProUGUI playerCurrencyText;
@@ -36,12 +37,19 @@ public class ShopSystem : MonoBehaviour
     public List<ShopItemData> shopItems = new List<ShopItemData>();
 
     [Header("Settings")]
-    public bool allowKeyboardToggle = false; // Disable to only open via NPC
+    public bool allowKeyboardToggle = false;
     public KeyCode toggleKey = KeyCode.B;
+    public bool useAnimator = false;
 
     [Header("Debug")]
     public bool showDebugLogs = false;
 
+    // Events for InteractionDetector
+    public delegate void OnShopStateChanged();
+    public event OnShopStateChanged onShopOpened;
+    public event OnShopStateChanged onShopClosed;
+
+    private UIOpenAnimator animator;
     private List<GameObject> itemTabs = new List<GameObject>();
     private ShopItemData currentSelectedItem = null;
 
@@ -59,23 +67,61 @@ public class ShopSystem : MonoBehaviour
 
     void Start()
     {
-        // Wire up buy button
         if (buyButton != null)
             buyButton.onClick.AddListener(OnBuyButtonClicked);
 
-        // Start closed
         if (shopPanel != null)
             shopPanel.SetActive(false);
 
-        // Show "no selection" state
         ShowNoSelection();
+
+        if (useAnimator)
+        {
+            animator = GetComponentInParent<UIOpenAnimator>();
+            if (animator == null)
+            {
+                // Try to find it by looking for Shop type
+                UIOpenAnimator[] animators = FindObjectsOfType<UIOpenAnimator>();
+                foreach (var anim in animators)
+                {
+                    if (anim.uiType == UIOpenAnimator.UIType.Shop)
+                    {
+                        animator = anim;
+                        break;
+                    }
+                }
+            }
+
+            if (animator == null && showDebugLogs)
+            {
+                Debug.LogWarning("[Shop] useAnimator is true but no UIOpenAnimator found!");
+            }
+        }
     }
 
     void Update()
     {
         if (allowKeyboardToggle && Input.GetKeyDown(toggleKey))
         {
-            ToggleShop();
+            if (useAnimator && animator != null)
+            {
+                if (!animator.isAnimating)
+                {
+                    if (!animator.isOpen)
+                    {
+                        animator.PlayOpen();
+                        RefreshShop();
+                    }
+                    else
+                    {
+                        animator.PlayClose();
+                    }
+                }
+            }
+            else
+            {
+                ToggleShop();
+            }
         }
     }
 
@@ -94,40 +140,59 @@ public class ShopSystem : MonoBehaviour
 
     public void OpenShop()
     {
-        shopPanel.SetActive(true);
-        RefreshShop();
+        if (useAnimator && animator != null)
+        {
+            if (!animator.isAnimating && !animator.isOpen)
+            {
+                animator.PlayOpen();
+                RefreshShop();
+            }
+        }
+        else
+        {
+            shopPanel.SetActive(true);
+            RefreshShop();
+        }
+        
+        onShopOpened?.Invoke(); // Notify listeners
         
         if (showDebugLogs) Debug.Log("[Shop] Opened by NPC");
     }
 
     public void CloseShop()
     {
-        shopPanel.SetActive(false);
+        if (useAnimator && animator != null)
+        {
+            if (!animator.isAnimating && animator.isOpen)
+            {
+                animator.PlayClose();
+            }
+        }
+        else
+        {
+            shopPanel.SetActive(false);
+        }
+        
+        onShopClosed?.Invoke(); // Notify listeners
         
         if (showDebugLogs) Debug.Log("[Shop] Closed");
     }
 
     void RefreshShop()
     {
-        // Check if currency system exists
         if (JournalController.Instance == null)
         {
             Debug.LogError("[Shop] JournalController.Instance is NULL! Make sure JournalUIController exists in scene with JournalController.cs");
         }
 
-        // Update currency display
         UpdateCurrencyDisplay();
-
-        // Clear existing tabs
         ClearItemTabs();
 
-        // Create item tabs
         foreach (var item in shopItems)
         {
             CreateItemTab(item);
         }
 
-        // Reset selection
         currentSelectedItem = null;
         ShowNoSelection();
 
@@ -150,7 +215,6 @@ public class ShopSystem : MonoBehaviour
         GameObject tabObj = Instantiate(shopItemTabPrefab, shopItemListContainer);
         itemTabs.Add(tabObj);
 
-        // Set icon
         Image iconImage = tabObj.transform.Find("Icon")?.GetComponent<Image>();
         if (iconImage != null && item.icon != null)
         {
@@ -158,21 +222,18 @@ public class ShopSystem : MonoBehaviour
             iconImage.color = Color.white;
         }
 
-        // Set name
         TextMeshProUGUI nameText = tabObj.transform.Find("Name")?.GetComponent<TextMeshProUGUI>();
         if (nameText != null)
         {
             nameText.text = item.itemName;
         }
 
-        // Set price
         TextMeshProUGUI priceText = tabObj.transform.Find("Price")?.GetComponent<TextMeshProUGUI>();
         if (priceText != null)
         {
             priceText.text = $"${item.price}";
         }
 
-        // Add button functionality
         Button button = tabObj.GetComponent<Button>();
         if (button == null)
         {
@@ -192,45 +253,38 @@ public class ShopSystem : MonoBehaviour
 
     void DisplayItemDetails(ShopItemData item)
     {
-        // Hide "no selection" message
         if (noSelectionMessage != null)
             noSelectionMessage.SetActive(false);
 
-        // Show item image
         if (itemDetailImage != null)
         {
             itemDetailImage.sprite = item.icon;
             itemDetailImage.gameObject.SetActive(item.icon != null);
         }
 
-        // Show name
         if (itemNameText != null)
         {
             itemNameText.text = item.itemName;
             itemNameText.gameObject.SetActive(true);
         }
 
-        // Show description
         if (itemDescriptionText != null)
         {
             itemDescriptionText.text = item.description;
             itemDescriptionText.gameObject.SetActive(true);
         }
 
-        // Show price
         if (itemPriceText != null)
         {
             itemPriceText.text = $"${item.price}";
             itemPriceText.gameObject.SetActive(true);
         }
 
-        // Update buy button
         UpdateBuyButton();
     }
 
     void ShowNoSelection()
     {
-        // Hide detail elements
         if (itemDetailImage != null)
             itemDetailImage.gameObject.SetActive(false);
 
@@ -255,7 +309,6 @@ public class ShopSystem : MonoBehaviour
         if (buyButton != null)
             buyButton.gameObject.SetActive(false);
 
-        // Show "no selection" message
         if (noSelectionMessage != null)
             noSelectionMessage.SetActive(true);
     }
@@ -266,7 +319,6 @@ public class ShopSystem : MonoBehaviour
 
         buyButton.gameObject.SetActive(true);
 
-        // Check if player can afford
         int playerCurrency = 0;
         if (JournalController.Instance != null)
         {
@@ -280,10 +332,8 @@ public class ShopSystem : MonoBehaviour
 
         bool canAfford = playerCurrency >= currentSelectedItem.price;
 
-        // Update button state
         buyButton.interactable = canAfford;
 
-        // Update button text
         if (buyButtonText != null)
         {
             if (canAfford)
@@ -301,19 +351,15 @@ public class ShopSystem : MonoBehaviour
     {
         if (currentSelectedItem == null) return;
 
-        // Deduct currency
         if (JournalController.Instance != null)
         {
             bool success = JournalController.Instance.RemoveCurrency(currentSelectedItem.price);
 
             if (success)
             {
-                // Give item to player
                 GiveItemToPlayer(currentSelectedItem);
-
-                // Update displays
                 UpdateCurrencyDisplay();
-                UpdateBuyButton(); // Update button state after purchase
+                UpdateBuyButton();
 
                 if (showDebugLogs) Debug.Log($"[Shop] Purchased {currentSelectedItem.itemName}");
             }
@@ -329,10 +375,8 @@ public class ShopSystem : MonoBehaviour
         switch (item.itemType)
         {
             case ShopItemType.Seed:
-                // Add to inventory (using existing inventory system)
                 if (InventorySystem.Instance != null && JournalDatabase.Instance != null)
                 {
-                    // Get plant data for icon
                     JournalPlantData plantData = JournalDatabase.Instance.GetPlantData(item.plantID);
                     Sprite icon = plantData != null ? plantData.icon : item.icon;
 
@@ -350,7 +394,6 @@ public class ShopSystem : MonoBehaviour
             case ShopItemType.Tool:
             case ShopItemType.Decoration:
             case ShopItemType.Consumable:
-                // Placeholder for future item types
                 if (showDebugLogs) Debug.Log($"[Shop] Gave {item.itemName} ({item.itemType})");
                 break;
         }
@@ -364,11 +407,12 @@ public class ShopSystem : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Check if shop is currently open
-    /// </summary>
     public bool IsShopOpen()
     {
+        if (useAnimator && animator != null)
+        {
+            return animator.isOpen;
+        }
         return shopPanel != null && shopPanel.activeSelf;
     }
 }

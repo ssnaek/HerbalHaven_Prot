@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 /// <summary>
 /// Main journal controller. Handles opening/closing and coordinating between list and detail view.
+/// Now uses ShopItemData as primary source, with fallback to JournalPlantData for wild plants.
 /// </summary>
 public class JournalController : MonoBehaviour
 {
@@ -16,7 +17,7 @@ public class JournalController : MonoBehaviour
     
     [Header("Currency Display")]
     public TextMeshProUGUI currencyText;
-    public int playerCurrency = 100; // Placeholder for testing
+    public int playerCurrency = 100;
 
     [Header("Left Page - Plant Details")]
     public Image plantPhoto;
@@ -25,7 +26,7 @@ public class JournalController : MonoBehaviour
     public TextMeshProUGUI scientificNameText;
     public TextMeshProUGUI habitatText;
     public TextMeshProUGUI usesText;
-    public GameObject noSelectionMessage; // "Select a plant to view details"
+    public GameObject noSelectionMessage;
 
     [Header("Right Page - Plant List")]
     public Transform plantListContainer;
@@ -33,18 +34,22 @@ public class JournalController : MonoBehaviour
 
     [Header("Settings")]
     public KeyCode toggleKey = KeyCode.J;
-    public bool useAnimator = true; // If true, use JournalOpenAnimator; if false, instant toggle
+    public bool useAnimator = true;
 
     [Header("Debug")]
     public bool showDebugLogs = false;
 
-    private JournalOpenAnimator animator;
+    // Events for InteractionDetector
+    public delegate void OnJournalStateChanged();
+    public event OnJournalStateChanged onJournalOpened;
+    public event OnJournalStateChanged onJournalClosed;
+
+    private UIOpenAnimator animator;
     private List<GameObject> listItems = new List<GameObject>();
     private string currentSelectedPlantID = null;
 
     void Start()
     {
-        // Singleton
         if (Instance == null)
         {
             Instance = this;
@@ -54,39 +59,44 @@ public class JournalController : MonoBehaviour
             Debug.LogWarning("[Journal] Multiple JournalControllers detected! Using first instance.");
         }
 
-        // Find animator if using it
         if (useAnimator)
         {
-            animator = GetComponentInParent<JournalOpenAnimator>();
+            animator = GetComponentInParent<UIOpenAnimator>();
             if (animator == null)
             {
-                animator = FindObjectOfType<JournalOpenAnimator>();
+                // Find all animators and get the Journal one specifically
+                UIOpenAnimator[] animators = FindObjectsOfType<UIOpenAnimator>();
+                foreach (var anim in animators)
+                {
+                    if (anim.uiType == UIOpenAnimator.UIType.Journal)
+                    {
+                        animator = anim;
+                        break;
+                    }
+                }
             }
             
             if (animator == null && showDebugLogs)
             {
-                Debug.LogWarning("[Journal] useAnimator is true but no JournalOpenAnimator found!");
+                Debug.LogWarning("[Journal] useAnimator is true but no UIOpenAnimator found!");
+            }
+            else if (showDebugLogs)
+            {
+                Debug.Log($"[Journal] Found animator: {animator.gameObject.name}, type: {animator.uiType}");
             }
         }
 
-        // Subscribe to inventory changes
         if (InventorySystem.Instance != null)
         {
             InventorySystem.Instance.onInventoryChangedCallback += RefreshPlantList;
         }
 
-        // Initialize left page to show nothing
         InitializeLeftPage();
-        
-        // Update currency display
         UpdateCurrencyDisplay();
-
-        // Don't touch journalPanel active state - let JournalOpenAnimator handle it
     }
 
     void InitializeLeftPage()
     {
-        // Hide all detail elements initially
         if (plantPhoto != null)
         {
             plantPhoto.gameObject.SetActive(false);
@@ -119,7 +129,6 @@ public class JournalController : MonoBehaviour
             usesText.gameObject.SetActive(false);
         }
 
-        // Show only the "no selection" message
         if (noSelectionMessage != null)
         {
             noSelectionMessage.SetActive(true);
@@ -134,7 +143,6 @@ public class JournalController : MonoBehaviour
         {
             if (useAnimator && animator != null)
             {
-                // If animating open and not yet open, request cancel
                 if (animator.isAnimating && !animator.isOpen)
                 {
                     animator.RequestCancel();
@@ -142,23 +150,22 @@ public class JournalController : MonoBehaviour
                     return;
                 }
                 
-                // Normal toggle behavior
                 if (!animator.isAnimating)
                 {
                     if (!animator.isOpen)
                     {
                         animator.PlayOpen();
-                        OnJournalOpened(); // Prepare content when opening
+                        OnJournalOpened();
                     }
                     else
                     {
                         animator.PlayClose();
+                        onJournalClosed?.Invoke(); // Notify listeners
                     }
                 }
             }
             else
             {
-                // Instant toggle without animation
                 ToggleJournal();
             }
         }
@@ -173,23 +180,25 @@ public class JournalController : MonoBehaviour
         {
             OnJournalOpened();
         }
+        else
+        {
+            onJournalClosed?.Invoke(); // Notify listeners
+        }
 
         if (showDebugLogs) Debug.Log($"[Journal] Toggled {(newState ? "OPEN" : "CLOSED")}");
     }
 
-    /// <summary>
-    /// Called when journal is opened (either by animation or instant)
-    /// </summary>
     public void OnJournalOpened()
     {
         RefreshPlantList();
         UpdateCurrencyDisplay();
         
-        // Show placeholder if nothing selected
         if (currentSelectedPlantID == null)
         {
             ShowNoSelection();
         }
+
+        onJournalOpened?.Invoke(); // Notify listeners
 
         if (showDebugLogs) Debug.Log("[Journal] OnJournalOpened - content refreshed");
     }
@@ -198,15 +207,12 @@ public class JournalController : MonoBehaviour
     {
         if (showDebugLogs) Debug.Log("[Journal] Refreshing plant list");
 
-        // Clear existing items
         ClearList();
 
         if (InventorySystem.Instance == null) return;
 
-        // Get all collected plants
         List<InventoryItemData> plants = InventorySystem.Instance.GetAllItems();
 
-        // Create list item for each plant
         foreach (var plant in plants)
         {
             CreateListItem(plant);
@@ -233,7 +239,6 @@ public class JournalController : MonoBehaviour
         GameObject item = Instantiate(plantListItemPrefab, plantListContainer);
         listItems.Add(item);
 
-        // Set up the visual components (same as inventory)
         Image iconImage = item.transform.Find("Icon")?.GetComponent<Image>();
         if (iconImage != null && plantData.icon != null)
         {
@@ -253,14 +258,12 @@ public class JournalController : MonoBehaviour
             quantityText.text = $"x{plantData.quantity}";
         }
 
-        // Add button functionality
         Button button = item.GetComponent<Button>();
         if (button == null)
         {
             button = item.AddComponent<Button>();
         }
 
-        // Capture plantID for the button click
         string plantID = plantData.itemID;
         button.onClick.AddListener(() => OnPlantSelected(plantID));
 
@@ -277,27 +280,109 @@ public class JournalController : MonoBehaviour
 
     void DisplayPlantDetails(string plantID)
     {
-        if (JournalDatabase.Instance == null)
+        // Try to get data from ShopSystem first (for shop-bought seeds)
+        ShopItemData shopData = GetShopItemData(plantID);
+        
+        if (shopData != null)
         {
-            Debug.LogError("[Journal] JournalDatabase.Instance is null!");
-            ShowNoSelection();
+            DisplayShopItemDetails(shopData);
             return;
         }
 
-        JournalPlantData plantData = JournalDatabase.Instance.GetPlantData(plantID);
-
-        if (plantData == null)
+        // Fallback to JournalPlantData (for wild-collected plants)
+        if (JournalDatabase.Instance != null)
         {
-            Debug.LogWarning($"[Journal] No journal data found for '{plantID}'");
-            ShowNoSelection();
-            return;
+            JournalPlantData journalData = JournalDatabase.Instance.GetPlantData(plantID);
+            if (journalData != null)
+            {
+                DisplayJournalPlantDetails(journalData);
+                return;
+            }
         }
 
-        // Hide "no selection" message
+        // No data found
+        Debug.LogWarning($"[Journal] No data found for '{plantID}'");
+        ShowNoSelection();
+    }
+
+    ShopItemData GetShopItemData(string plantID)
+    {
+        if (ShopSystem.Instance == null) return null;
+
+        foreach (var item in ShopSystem.Instance.shopItems)
+        {
+            if (item != null && item.plantID == plantID)
+            {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    void DisplayShopItemDetails(ShopItemData data)
+    {
         if (noSelectionMessage != null)
             noSelectionMessage.SetActive(false);
 
-        // Show plant details
+        // Use icon for shop items (no separate photo)
+        if (plantPhoto != null)
+        {
+            plantPhoto.sprite = data.icon;
+            plantPhoto.gameObject.SetActive(data.icon != null);
+        }
+
+        if (plantNameText != null)
+        {
+            plantNameText.text = data.itemName;
+            plantNameText.gameObject.SetActive(true);
+        }
+
+        if (plantDescriptionText != null)
+        {
+            plantDescriptionText.text = data.GetJournalDescription();
+            plantDescriptionText.gameObject.SetActive(true);
+        }
+
+        if (scientificNameText != null)
+        {
+            if (!string.IsNullOrEmpty(data.scientificName))
+            {
+                scientificNameText.text = $"<i>{data.scientificName}</i>";
+                scientificNameText.gameObject.SetActive(true);
+            }
+            else
+            {
+                scientificNameText.gameObject.SetActive(false);
+            }
+        }
+
+        // Habitat not available in ShopItemData
+        if (habitatText != null)
+        {
+            habitatText.gameObject.SetActive(false);
+        }
+
+        if (usesText != null)
+        {
+            if (!string.IsNullOrEmpty(data.uses))
+            {
+                usesText.text = data.uses;
+                usesText.gameObject.SetActive(true);
+            }
+            else
+            {
+                usesText.gameObject.SetActive(false);
+            }
+        }
+
+        if (showDebugLogs) Debug.Log($"[Journal] Displayed shop item details for {data.itemName}");
+    }
+
+    void DisplayJournalPlantDetails(JournalPlantData plantData)
+    {
+        if (noSelectionMessage != null)
+            noSelectionMessage.SetActive(false);
+
         if (plantPhoto != null)
         {
             plantPhoto.sprite = plantData.plantPhoto;
@@ -360,7 +445,6 @@ public class JournalController : MonoBehaviour
 
     void ShowNoSelection()
     {
-        // Hide all detail elements
         if (plantPhoto != null)
             plantPhoto.gameObject.SetActive(false);
 
@@ -385,7 +469,6 @@ public class JournalController : MonoBehaviour
         if (usesText != null)
             usesText.gameObject.SetActive(false);
 
-        // Show placeholder message
         if (noSelectionMessage != null)
             noSelectionMessage.SetActive(true);
     }
@@ -398,9 +481,6 @@ public class JournalController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Add currency (for shop system later)
-    /// </summary>
     public void AddCurrency(int amount)
     {
         playerCurrency += amount;
@@ -409,9 +489,6 @@ public class JournalController : MonoBehaviour
         if (showDebugLogs) Debug.Log($"[Journal] Added ${amount}. Total: ${playerCurrency}");
     }
 
-    /// <summary>
-    /// Remove currency (for shop purchases)
-    /// </summary>
     public bool RemoveCurrency(int amount)
     {
         if (playerCurrency >= amount)
@@ -431,7 +508,6 @@ public class JournalController : MonoBehaviour
 
     void OnDestroy()
     {
-        // Unsubscribe from events
         if (InventorySystem.Instance != null)
         {
             InventorySystem.Instance.onInventoryChangedCallback -= RefreshPlantList;

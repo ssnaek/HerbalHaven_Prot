@@ -3,6 +3,7 @@ using UnityEngine;
 /// <summary>
 /// Detects nearby interactables and shows prompt UI.
 /// Attach to Player GameObject.
+/// Now uses events to efficiently hide/show prompt when shop/journal opens.
 /// </summary>
 public class InteractionDetector : MonoBehaviour
 {
@@ -27,6 +28,57 @@ public class InteractionDetector : MonoBehaviour
     private IInteractable currentInteractable = null;
     private GameObject currentInteractableObject = null;
 
+    void Start()
+    {
+        // Subscribe to shop events
+        if (ShopSystem.Instance != null)
+        {
+            ShopSystem.Instance.onShopOpened += OnUIOpened;
+            ShopSystem.Instance.onShopClosed += OnUIClosed;
+        }
+
+        // Subscribe to journal events
+        if (JournalController.Instance != null)
+        {
+            JournalController.Instance.onJournalOpened += OnUIOpened;
+            JournalController.Instance.onJournalClosed += OnUIClosed;
+        }
+    }
+
+    void OnDestroy()
+    {
+        // Unsubscribe from events
+        if (ShopSystem.Instance != null)
+        {
+            ShopSystem.Instance.onShopOpened -= OnUIOpened;
+            ShopSystem.Instance.onShopClosed -= OnUIClosed;
+        }
+
+        if (JournalController.Instance != null)
+        {
+            JournalController.Instance.onJournalOpened -= OnUIOpened;
+            JournalController.Instance.onJournalClosed -= OnUIClosed;
+        }
+    }
+
+    void OnUIOpened()
+    {
+        HidePrompt();
+        currentInteractable = null; // Reset so it detects as "new" when UI closes
+        currentInteractableObject = null;
+        enabled = false; // Stop checking while UI is open
+        
+        if (showDebugLogs) Debug.Log("[Detector] UI opened, detector paused, current target reset");
+    }
+
+    void OnUIClosed()
+    {
+        enabled = true; // Resume checking
+        checkTimer = checkInterval; // Force immediate check on next frame
+        
+        if (showDebugLogs) Debug.Log("[Detector] UI closed, detector resumed");
+    }
+
     void Update()
     {
         checkTimer += Time.deltaTime;
@@ -40,15 +92,11 @@ public class InteractionDetector : MonoBehaviour
 
     void CheckForNearbyInteractables()
     {
+        if (showDebugLogs) Debug.Log("[Detector] Checking for interactables...");
+        
         IInteractable nearestInteractable = null;
         GameObject nearestObject = null;
         float nearestDistance = float.MaxValue;
-
-         if (ShopSystem.Instance != null && ShopSystem.Instance.IsShopOpen())
-        {
-            HidePrompt();
-            return;
-        }
 
         // Raycast forward from camera
         bool raycastHit = false;
@@ -75,12 +123,16 @@ public class InteractionDetector : MonoBehaviour
         {
             Collider[] colliders = Physics.OverlapSphere(transform.position, detectionRange, interactionLayer);
 
+            if (showDebugLogs) Debug.Log($"[Detector] Sphere found {colliders.Length} colliders");
+
             foreach (Collider col in colliders)
             {
                 if (col == null) continue;
 
                 float distance = Vector3.Distance(transform.position, col.transform.position);
                 IInteractable interactable = col.GetComponentInParent<IInteractable>();
+
+                if (showDebugLogs) Debug.Log($"[Detector] Checking collider: {col.name}, distance: {distance:F2}, has IInteractable: {interactable != null}");
 
                 if (interactable != null && interactable.CanInteract() && distance < nearestDistance)
                 {
@@ -97,35 +149,38 @@ public class InteractionDetector : MonoBehaviour
             if (nearestInteractable != null)
             {
                 // Show prompt for new interactable
+                if (showDebugLogs) Debug.Log($"[Detector] Found new target: {nearestObject.name}, showing prompt");
                 ShowPrompt(nearestInteractable);
                 currentInteractable = nearestInteractable;
                 currentInteractableObject = nearestObject;
-
-                if (showDebugLogs) Debug.Log($"[Detector] Now targeting: {nearestObject.name}");
             }
             else
             {
                 // Hide prompt - nothing in range
+                if (showDebugLogs) Debug.Log("[Detector] No interactable in range, hiding prompt");
                 HidePrompt();
                 currentInteractable = null;
                 currentInteractableObject = null;
-
-                if (showDebugLogs) Debug.Log("[Detector] No interactable in range");
             }
         }
-
-
-
-
+        else if (showDebugLogs && nearestInteractable != null)
+        {
+            Debug.Log($"[Detector] Same target as before: {nearestObject.name}");
+        }
     }
 
     void ShowPrompt(IInteractable interactable)
     {
-        if (InteractionPromptUI.Instance == null) return;
+        if (InteractionPromptUI.Instance == null)
+        {
+            if (showDebugLogs) Debug.LogWarning("[Detector] InteractionPromptUI.Instance is null!");
+            return;
+        }
 
         string message = interactable.GetInteractionPrompt();
         string keyString = interactionKey.ToString();
 
+        if (showDebugLogs) Debug.Log($"[Detector] Calling Show() with message: '{message}'");
         InteractionPromptUI.Instance.Show(message, keyString);
     }
 
@@ -133,6 +188,7 @@ public class InteractionDetector : MonoBehaviour
     {
         if (InteractionPromptUI.Instance == null) return;
 
+        if (showDebugLogs) Debug.Log("[Detector] Calling Hide()");
         InteractionPromptUI.Instance.Hide();
     }
 
