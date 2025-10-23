@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60bf832aac1a3204a801cbcce682b40d, type: 3}
   m_Name: test1'
   m_EditorClassIdentifier: 
-  plantID: test1
+  plantID: gingers
   displayName: test1
   icon: {fileID: 21300000, guid: 7c164e3d633488e4491f151c840a0d84, type: 3}
   plantPhoto: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}

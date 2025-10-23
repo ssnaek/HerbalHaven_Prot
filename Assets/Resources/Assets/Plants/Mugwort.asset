@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43600f5728f39af4ca16a529c61fe956, type: 3}
+  m_Name: Mugwort
+  m_EditorClassIdentifier: 
+  plantName: Mugwort
+  plantID: mugwort
+  icon: {fileID: 21300000, guid: 788f43c1a92ca0642aed63892950f492, type: 3}
+  plantPrefab: {fileID: 6921645055305499216, guid: e2140f51a4db7a74f91c6066b64a8217, type: 3}
+  yieldPerPick: 1
+  maxStack: 99
+  journalEntry: {fileID: 0}
+  rarity: 1
+  uses: 

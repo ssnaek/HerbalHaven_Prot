@@ -280,7 +280,40 @@ public class JournalController : MonoBehaviour
 
     void DisplayPlantDetails(string plantID)
     {
-        // Try to get data from ShopSystem first (for shop-bought seeds)
+        // Try to get herb data from inventory (works in any scene!)
+        InventoryItemData inventoryItem = InventorySystem.Instance?.GetItemData(plantID);
+        
+        if (inventoryItem != null && inventoryItem.herbData != null)
+        {
+            // Use cached herb data from inventory
+            PlantDataSO herbData = inventoryItem.herbData;
+            
+            if (herbData.journalEntry != null)
+            {
+                DisplayJournalPlantDetails(herbData.journalEntry);
+                
+                // Add medicinal uses from PlantDataSO
+                if (usesText != null && herbData.uses != null && herbData.uses.Length > 0)
+                {
+                    string usesString = "Medicinal Uses: ";
+                    for (int i = 0; i < herbData.uses.Length; i++)
+                    {
+                        usesString += herbData.uses[i].ToString();
+                        if (i < herbData.uses.Length - 1)
+                            usesString += ", ";
+                    }
+                    usesText.text = usesString;
+                    usesText.gameObject.SetActive(true);
+                }
+            }
+            else
+            {
+                DisplayHerbDetails(herbData);
+            }
+            return;
+        }
+
+        // Try to get data from ShopSystem (for shop-bought seeds)
         ShopItemData shopData = GetShopItemData(plantID);
         
         if (shopData != null)
@@ -304,6 +337,8 @@ public class JournalController : MonoBehaviour
         Debug.LogWarning($"[Journal] No data found for '{plantID}'");
         ShowNoSelection();
     }
+
+    // Remove GetHerbData() - no longer needed!
 
     ShopItemData GetShopItemData(string plantID)
     {
@@ -376,6 +411,65 @@ public class JournalController : MonoBehaviour
         }
 
         if (showDebugLogs) Debug.Log($"[Journal] Displayed shop item details for {data.itemName}");
+    }
+
+    void DisplayHerbDetails(PlantDataSO herbData)
+    {
+        if (noSelectionMessage != null)
+            noSelectionMessage.SetActive(false);
+
+        // Use icon for herbs
+        if (plantPhoto != null)
+        {
+            plantPhoto.sprite = herbData.icon;
+            plantPhoto.gameObject.SetActive(herbData.icon != null);
+        }
+
+        if (plantNameText != null)
+        {
+            plantNameText.text = herbData.plantName;
+            plantNameText.gameObject.SetActive(true);
+        }
+
+        if (plantDescriptionText != null)
+        {
+            // For now, herbs don't have descriptions in PlantDataSO
+            // You can add this field later if needed
+            plantDescriptionText.text = $"A {herbData.rarity.ToString().ToLower()} herb.";
+            plantDescriptionText.gameObject.SetActive(true);
+        }
+
+        if (scientificNameText != null)
+        {
+            scientificNameText.gameObject.SetActive(false);
+        }
+
+        if (habitatText != null)
+        {
+            habitatText.gameObject.SetActive(false);
+        }
+
+        if (usesText != null)
+        {
+            if (herbData.uses != null && herbData.uses.Length > 0)
+            {
+                string usesString = "Uses: ";
+                for (int i = 0; i < herbData.uses.Length; i++)
+                {
+                    usesString += herbData.uses[i].ToString();
+                    if (i < herbData.uses.Length - 1)
+                        usesString += ", ";
+                }
+                usesText.text = usesString;
+                usesText.gameObject.SetActive(true);
+            }
+            else
+            {
+                usesText.gameObject.SetActive(false);
+            }
+        }
+
+        if (showDebugLogs) Debug.Log($"[Journal] Displayed herb details for {herbData.plantName}");
     }
 
     void DisplayJournalPlantDetails(JournalPlantData plantData)

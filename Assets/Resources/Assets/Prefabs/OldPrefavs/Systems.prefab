@@ -1468,6 +1468,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   journalPanel: {fileID: 8561437925494966956}
+  currencyText: {fileID: 0}
+  playerCurrency: 100
   plantPhoto: {fileID: 2962889879778564781}
   plantNameText: {fileID: 3594136334679641349}
   plantDescriptionText: {fileID: 9147679849496734900}
@@ -1478,6 +1480,7 @@ MonoBehaviour:
   plantListContainer: {fileID: 564726820933005085}
   plantListItemPrefab: {fileID: 4934851643222826496, guid: ad5246a3526c60f49a31fdf52eb27105, type: 3}
   toggleKey: 106
+  useAnimator: 1
   showDebugLogs: 1
 --- !u!1 &8497130423213802665
 GameObject:
@@ -1736,7 +1739,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2340958589322230961, guid: 6c8890dc6d230b540b5555d45376b7d3, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -0.00024414062
+      value: -0.00048828125
       objectReference: {fileID: 0}
     - target: {fileID: 2340958589322230961, guid: 6c8890dc6d230b540b5555d45376b7d3, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -1756,7 +1759,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3644097762808662106, guid: 6c8890dc6d230b540b5555d45376b7d3, type: 3}
       propertyPath: m_Size
-      value: 0.99999887
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3644097762808662106, guid: 6c8890dc6d230b540b5555d45376b7d3, type: 3}
       propertyPath: m_Value
@@ -1768,7 +1771,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4224440166202179680, guid: 6c8890dc6d230b540b5555d45376b7d3, type: 3}
       propertyPath: m_Value
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4520448145369340362, guid: 6c8890dc6d230b540b5555d45376b7d3, type: 3}
       propertyPath: m_Name
