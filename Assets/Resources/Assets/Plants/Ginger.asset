@@ -18,6 +18,6 @@ MonoBehaviour:
   plantPrefab: {fileID: 6140300859535827464, guid: e04639fe875fae142a9b5a2c27305de0, type: 3}
   yieldPerPick: 1
   maxStack: 99
-  journalEntry: {fileID: 0}
+  journalEntry: {fileID: 11400000, guid: 5bfdda77956e0424b8211f111d5bd8c6, type: 2}
   rarity: 0
   uses: 000000000100000003000000

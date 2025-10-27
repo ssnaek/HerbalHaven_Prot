@@ -1,9 +1,5 @@
 using UnityEngine;
 
-/// <summary>
-/// Makes NPC interactable and opens shop.
-/// Attach to your NPC GameObject.
-/// </summary>
 public class ShopNPC : MonoBehaviour, IInteractable
 {
     [Header("Shop Reference")]
@@ -19,6 +15,7 @@ public class ShopNPC : MonoBehaviour, IInteractable
 
     [Header("Debug")]
     public bool showDebugLogs = false;
+    
 
     private Transform player;
     private bool shopIsOpen = false;

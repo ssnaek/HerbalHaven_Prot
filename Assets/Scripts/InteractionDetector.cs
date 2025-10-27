@@ -1,9 +1,10 @@
 using UnityEngine;
+using Yarn.Unity;
 
 /// <summary>
 /// Detects nearby interactables and shows prompt UI.
 /// Attach to Player GameObject.
-/// Now uses events to efficiently hide/show prompt when shop/journal opens.
+/// Now uses events to efficiently hide/show prompt when shop/journal/dialogue opens.
 /// </summary>
 public class InteractionDetector : MonoBehaviour
 {
@@ -27,6 +28,7 @@ public class InteractionDetector : MonoBehaviour
     private float checkTimer = 0f;
     private IInteractable currentInteractable = null;
     private GameObject currentInteractableObject = null;
+    private DialogueRunner dialogueRunner;
 
     void Start()
     {
@@ -43,6 +45,20 @@ public class InteractionDetector : MonoBehaviour
             JournalController.Instance.onJournalOpened += OnUIOpened;
             JournalController.Instance.onJournalClosed += OnUIClosed;
         }
+
+        // Subscribe to dialogue events
+        dialogueRunner = FindObjectOfType<DialogueRunner>();
+        if (dialogueRunner != null)
+        {
+            dialogueRunner.onDialogueStart.AddListener(OnDialogueStarted);
+            dialogueRunner.onDialogueComplete.AddListener(OnDialogueEnded);
+            
+            if (showDebugLogs) Debug.Log("[Detector] Subscribed to DialogueRunner events");
+        }
+        else if (showDebugLogs)
+        {
+            Debug.LogWarning("[Detector] No DialogueRunner found in scene");
+        }
     }
 
     void OnDestroy()
@@ -58,6 +74,13 @@ public class InteractionDetector : MonoBehaviour
         {
             JournalController.Instance.onJournalOpened -= OnUIOpened;
             JournalController.Instance.onJournalClosed -= OnUIClosed;
+        }
+
+        // Unsubscribe from dialogue events
+        if (dialogueRunner != null)
+        {
+            dialogueRunner.onDialogueStart.RemoveListener(OnDialogueStarted);
+            dialogueRunner.onDialogueComplete.RemoveListener(OnDialogueEnded);
         }
     }
 
@@ -77,6 +100,18 @@ public class InteractionDetector : MonoBehaviour
         checkTimer = checkInterval; // Force immediate check on next frame
         
         if (showDebugLogs) Debug.Log("[Detector] UI closed, detector resumed");
+    }
+
+    void OnDialogueStarted()
+    {
+        OnUIOpened(); // Reuse existing UI opened logic
+        if (showDebugLogs) Debug.Log("[Detector] Dialogue started, hiding prompt");
+    }
+
+    void OnDialogueEnded()
+    {
+        OnUIClosed(); // Reuse existing UI closed logic
+        if (showDebugLogs) Debug.Log("[Detector] Dialogue ended, resuming detection");
     }
 
     void Update()

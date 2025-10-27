@@ -1,0 +1,6 @@
+﻿title: DayEndDialogue
+---
+Narrator: The day has ended. Time to head back!
+-> Continue to next day
+    Narrator: See you tomorrow!
+===

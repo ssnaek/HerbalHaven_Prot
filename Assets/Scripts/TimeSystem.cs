@@ -1,11 +1,13 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
+using Yarn.Unity;
 
 /// <summary>
 /// Day-based time system for plant collection phase.
 /// Time advances through interactions via TimeAdvancer components.
 /// Tracks day counter and total harvests for plant regeneration.
+/// Now triggers YarnSpinner dialogue at day end before transitioning.
 /// </summary>
 public class TimeSystem : MonoBehaviour
 {
@@ -28,6 +30,13 @@ public class TimeSystem : MonoBehaviour
     [Header("Day System")]
     [Tooltip("Scene to load when day ends (empty = reload current scene)")]
     public string nextSceneName = "";
+    
+    [Header("Day End Dialogue")]
+    [Tooltip("Yarn node name to play at day end (leave empty to skip dialogue)")]
+    public string dayEndDialogueNode = "DayEndDialogue";
+    
+    [Tooltip("Wait for dialogue to complete before transitioning")]
+    public bool waitForDialogue = true;
 
     [Header("Debug")]
     public bool showDebugLogs = false;
@@ -36,6 +45,7 @@ public class TimeSystem : MonoBehaviour
     private int currentTimeMinutes;
     private int totalHarvestsToday = 0;
     private bool hasTransitioned = false;
+    private DialogueRunner dialogueRunner;
 
     // Events
     public delegate void OnTimeChanged(int minutes);
@@ -83,6 +93,9 @@ public class TimeSystem : MonoBehaviour
         RefindUIReferences();
         UpdateTimeDisplay();
         UpdateDayDisplay();
+        
+        // Re-find DialogueRunner
+        dialogueRunner = FindObjectOfType<DialogueRunner>();
     }
 
     void Start()
@@ -90,6 +103,9 @@ public class TimeSystem : MonoBehaviour
         RefindUIReferences();
         UpdateTimeDisplay();
         UpdateDayDisplay();
+        
+        // Find DialogueRunner
+        dialogueRunner = FindObjectOfType<DialogueRunner>();
         
         // Notify listeners that a new day has started
         onNewDayCallback?.Invoke(currentDay);
@@ -173,12 +189,53 @@ public class TimeSystem : MonoBehaviour
         // Notify listeners before transitioning
         onDayEndCallback?.Invoke(currentDay, totalHarvestsToday);
 
+        // Play day-end dialogue if configured
+        if (!string.IsNullOrEmpty(dayEndDialogueNode) && dialogueRunner != null)
+        {
+            if (showDebugLogs) Debug.Log($"[TimeSystem] Starting day-end dialogue: {dayEndDialogueNode}");
+            
+            if (waitForDialogue)
+            {
+                // Subscribe to dialogue complete event
+                dialogueRunner.onDialogueComplete.AddListener(OnDayEndDialogueComplete);
+            }
+            
+            dialogueRunner.StartDialogue(dayEndDialogueNode);
+            
+            if (!waitForDialogue)
+            {
+                // Don't wait, transition immediately after starting dialogue
+                TransitionToNextDay();
+            }
+        }
+        else
+        {
+            // No dialogue, transition immediately
+            TransitionToNextDay();
+        }
+    }
+
+    void OnDayEndDialogueComplete()
+    {
+        if (showDebugLogs) Debug.Log("[TimeSystem] Day-end dialogue complete, transitioning...");
+        
+        // Unsubscribe
+        if (dialogueRunner != null)
+        {
+            dialogueRunner.onDialogueComplete.RemoveListener(OnDayEndDialogueComplete);
+        }
+        
+        TransitionToNextDay();
+    }
+
+    void TransitionToNextDay()
+    {
         // Increment day counter and save
         currentDay++;
         PlayerPrefs.SetInt("CurrentDay", currentDay);
         PlayerPrefs.Save();
 
-        // Transition to next day
+        // Start new day
         StartNewDay();
     }
 

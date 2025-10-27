@@ -39,8 +39,14 @@ public class PlayerController : MonoBehaviour
     // ---------------- Movement ----------------
     void HandleMovement()
     {
-        float h = Input.GetAxis("Horizontal");
-        float v = Input.GetAxis("Vertical");
+        // WASD only - no arrow keys
+        float h = 0f;
+        float v = 0f;
+
+        if (Input.GetKey(KeyCode.A)) h = -1f;
+        if (Input.GetKey(KeyCode.D)) h = 1f;
+        if (Input.GetKey(KeyCode.W)) v = 1f;
+        if (Input.GetKey(KeyCode.S)) v = -1f;
 
         Vector3 camForward = Camera.main.transform.forward;
         Vector3 camRight = Camera.main.transform.right;
@@ -62,7 +68,16 @@ public class PlayerController : MonoBehaviour
     // ---------------- Rotation ----------------
     void HandleRotation()
     {
-        Vector3 inputDir = new Vector3(Input.GetAxis("Horizontal"), 0f, Input.GetAxis("Vertical"));
+        // WASD only for rotation direction too
+        float h = 0f;
+        float v = 0f;
+
+        if (Input.GetKey(KeyCode.A)) h = -1f;
+        if (Input.GetKey(KeyCode.D)) h = 1f;
+        if (Input.GetKey(KeyCode.W)) v = 1f;
+        if (Input.GetKey(KeyCode.S)) v = -1f;
+
+        Vector3 inputDir = new Vector3(h, 0f, v);
         Vector3 moveDir = Camera.main.transform.TransformDirection(inputDir);
         moveDir.y = 0f;
 
