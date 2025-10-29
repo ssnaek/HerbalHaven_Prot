@@ -11,6 +11,10 @@ public class SceneMusicLoader : MonoBehaviour
     [Tooltip("Music to play in this scene")]
     public AudioClip sceneMusic;
     
+    [Tooltip("Volume for this music (0-1)")]
+    [Range(0f, 1f)]
+    public float musicVolume = 0.7f;
+    
     [Tooltip("Crossfade from previous scene music")]
     public bool crossfade = true;
     
@@ -26,9 +30,13 @@ public class SceneMusicLoader : MonoBehaviour
         {
             if (AudioManager.Instance != null)
             {
+                // Set volume for this scene
+                AudioManager.Instance.SetMusicVolume(musicVolume);
+                
+                // Play music
                 AudioManager.Instance.PlayMusic(sceneMusic, crossfade);
                 
-                if (showDebugLogs) Debug.Log($"[SceneMusicLoader] Started music: {sceneMusic.name}");
+                if (showDebugLogs) Debug.Log($"[SceneMusicLoader] Started music: {sceneMusic.name} at volume {musicVolume}");
             }
             else
             {
