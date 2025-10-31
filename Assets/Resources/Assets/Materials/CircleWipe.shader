@@ -5,7 +5,8 @@ Shader "Custom/CircleWipe"
         _MainTex ("Texture", 2D) = "white" {}
         _Color ("Color", Color) = (0,0,0,1)
         _Radius ("Radius", Range(0, 1.5)) = 1
-        _Smoothness ("Smoothness", Range(0, 0.5)) = 0.1
+        _Smoothness ("Edge Smoothness", Range(0, 0.5)) = 0.001
+        [Toggle] _HardEdge ("Hard Edge", Float) = 1
     }
     SubShader
     {
@@ -27,6 +28,7 @@ Shader "Custom/CircleWipe"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            #pragma shader_feature _HARDEDGE_ON
             #include "UnityCG.cginc"
 
             struct appdata
@@ -64,10 +66,17 @@ Shader "Custom/CircleWipe"
                 // Distance from center (max distance is ~0.7 for corners)
                 float dist = distance(uv, center);
                 
-                // Smooth circle mask
-                // When _Radius is 0, everything is black
-                // When _Radius is large, circle opens to show screen
-                float circle = smoothstep(_Radius - _Smoothness, _Radius + _Smoothness, dist);
+                float circle;
+                
+                #ifdef _HARDEDGE_ON
+                    // Hard edge - step function for crisp cutoff
+                    circle = step(_Radius, dist);
+                #else
+                    // Smooth edge - smoothstep for soft transition
+                    // When _Radius is 0, everything is black
+                    // When _Radius is large, circle opens to show screen
+                    circle = smoothstep(_Radius - _Smoothness, _Radius + _Smoothness, dist);
+                #endif
                 
                 // Apply color with circle mask as alpha
                 fixed4 col = _Color;

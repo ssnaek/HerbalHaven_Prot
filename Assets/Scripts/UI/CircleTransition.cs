@@ -3,24 +3,28 @@ using UnityEngine.UI;
 using System.Collections;
 
 /// <summary>
-/// Circle wipe transition effect.
-/// Can be used for teleports, scene transitions, etc.
-/// Attach to a Canvas GameObject.
+/// Circle wipe transition effect for scene transitions and teleports.
+/// Each scene can have its own instance - no persistence needed.
+/// Attach to a Canvas GameObject. TransitionOverlay child has the Image + Material.
 /// </summary>
 public class CircleTransition : MonoBehaviour
 {
+    // Static reference for easy access, but NOT a persistent singleton
     public static CircleTransition Instance { get; private set; }
 
     [Header("UI References")]
-    [Tooltip("Image that will mask the screen (should be full screen)")]
+    [Tooltip("Image that will mask the screen (child GameObject with material)")]
     public Image transitionImage;
 
     [Header("Transition Settings")]
     [Tooltip("How long the transition takes (in seconds)")]
     public float transitionDuration = 0.5f;
     
-    [Tooltip("Circle transition material (use UI/Default if you don't have custom)")]
-    public Material circleMaterial;
+    [Tooltip("Minimum radius value when circle is closed (try -0.1 to -0.3 if gap visible)")]
+    public float minRadius = -0.1f;
+    
+    [Tooltip("Maximum radius value when circle is open")]
+    public float maxRadius = 1.1f;
 
     [Header("Debug")]
     public bool showDebugLogs = false;
@@ -28,19 +32,76 @@ public class CircleTransition : MonoBehaviour
     [Header("Audio")]
     public SFXLibrary sfxLibrary;
 
+    private Canvas canvas;
     private bool isTransitioning = false;
+    private Material transitionMaterial;
 
     void Awake()
     {
-        if (Instance == null)
+        // Simple instance reference - no DontDestroyOnLoad, no persistence
+        // Each scene will have its own instance
+        Instance = this;
+
+        // Setup Canvas
+        SetupCanvas();
+
+        if (showDebugLogs) Debug.Log($"[CircleTransition] Initialized in scene");
+    }
+
+    void SetupCanvas()
+    {
+        // Get Canvas component
+        canvas = GetComponent<Canvas>();
+        if (canvas == null)
         {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
+            Debug.LogError("[CircleTransition] No Canvas component found!");
+            canvas = gameObject.AddComponent<Canvas>();
+        }
+
+        // Configure Canvas to overlay everything
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 9999; // Always on top
+
+        // Ensure CanvasScaler
+        CanvasScaler scaler = GetComponent<CanvasScaler>();
+        if (scaler == null)
+        {
+            scaler = gameObject.AddComponent<CanvasScaler>();
+        }
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+
+        // Ensure GraphicRaycaster
+        if (GetComponent<GraphicRaycaster>() == null)
+        {
+            gameObject.AddComponent<GraphicRaycaster>();
+        }
+
+        // Verify image reference
+        if (transitionImage == null)
+        {
+            Debug.LogError("[CircleTransition] TransitionOverlay Image not assigned!");
         }
         else
         {
-            Destroy(gameObject);
-            return;
+            // Make fullscreen
+            RectTransform rect = transitionImage.GetComponent<RectTransform>();
+            if (rect != null)
+            {
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+            }
+
+            // Create material instance
+            if (transitionImage.material != null)
+            {
+                transitionMaterial = new Material(transitionImage.material);
+                transitionImage.material = transitionMaterial;
+
+                if (showDebugLogs) Debug.Log("[CircleTransition] Created material instance");
+            }
         }
     }
 
@@ -52,21 +113,29 @@ public class CircleTransition : MonoBehaviour
             return;
         }
 
-        // Force material instantiation so we're not modifying the shared material
-        if (transitionImage.material != null)
+        // Start fully open (screen visible)
+        SetCircleSize(1f);
+
+        if (showDebugLogs) Debug.Log("[CircleTransition] Ready - screen visible");
+    }
+
+    void OnDestroy()
+    {
+        // Clean up material instance
+        if (transitionMaterial != null)
         {
-            transitionImage.material = new Material(transitionImage.material);
-            if (showDebugLogs) Debug.Log("[CircleTransition] Created material instance");
+            Destroy(transitionMaterial);
         }
 
-        // Start fully OPEN (circle at max size so screen is visible)
-        SetCircleSize(1f); // 1 = fully open
-        
-        if (showDebugLogs) Debug.Log("[CircleTransition] Initialized - screen should be visible");
+        // Clear instance reference if this was the active instance
+        if (Instance == this)
+        {
+            Instance = null;
+        }
     }
 
     /// <summary>
-    /// Fade out (circle closes), do action, fade in (circle opens)
+    /// Full transition: fade out, do action, fade in
     /// </summary>
     public void DoTransition(System.Action onTransitionMiddle)
     {
@@ -74,10 +143,14 @@ public class CircleTransition : MonoBehaviour
         {
             StartCoroutine(TransitionSequence(onTransitionMiddle));
         }
+        else if (showDebugLogs)
+        {
+            Debug.Log("[CircleTransition] Already transitioning, ignoring request");
+        }
     }
 
     /// <summary>
-    /// Just fade out (circle closes)
+    /// Just fade out (close circle)
     /// </summary>
     public void FadeOut(System.Action onComplete = null)
     {
@@ -88,7 +161,7 @@ public class CircleTransition : MonoBehaviour
     }
 
     /// <summary>
-    /// Just fade in (circle opens)
+    /// Just fade in (open circle)
     /// </summary>
     public void FadeIn(System.Action onComplete = null)
     {
@@ -102,16 +175,16 @@ public class CircleTransition : MonoBehaviour
     {
         isTransitioning = true;
 
-        // Fade out (close circle)
+        // Fade out
         yield return StartCoroutine(FadeOutCoroutine(null));
 
-        // Do the action (teleport, load scene, etc)
+        // Do action (load scene, teleport, etc)
         onMiddle?.Invoke();
 
         // Small delay
         yield return new WaitForSeconds(0.1f);
 
-        // Fade in (open circle)
+        // Fade in
         yield return StartCoroutine(FadeInCoroutine(null));
 
         isTransitioning = false;
@@ -121,7 +194,8 @@ public class CircleTransition : MonoBehaviour
     {
         isTransitioning = true;
 
-        if (AudioManager.Instance != null && sfxLibrary != null)
+        // Play sound
+        if (AudioManager.Instance != null && sfxLibrary != null && sfxLibrary.sceneTransitionStart != null)
         {
             AudioManager.Instance.PlaySFX(sfxLibrary.sceneTransitionStart);
         }
@@ -134,8 +208,8 @@ public class CircleTransition : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             float t = elapsed / transitionDuration;
-            
-            // Circle shrinks from 1 (full screen visible) to 0 (black screen)
+
+            // Circle shrinks: 1 (visible) -> 0 (black)
             SetCircleSize(1f - t);
 
             yield return null;
@@ -161,8 +235,8 @@ public class CircleTransition : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             float t = elapsed / transitionDuration;
-            
-            // Circle grows from 0 (black screen) to 1 (full screen visible)
+
+            // Circle grows: 0 (black) -> 1 (visible)
             SetCircleSize(t);
 
             yield return null;
@@ -181,21 +255,21 @@ public class CircleTransition : MonoBehaviour
         if (transitionImage == null) return;
 
         // If using circle shader material
-        if (transitionImage.material != null && transitionImage.material.HasProperty("_Radius"))
+        if (transitionMaterial != null && transitionMaterial.HasProperty("_Radius"))
         {
-            // size: 0 = screen covered (black), 1 = fully open (transparent)
-            // _Radius: 0 = black screen, 1.0 = full screen visible (diagonal corner distance is ~0.707)
-            float radius = size * 1.0f;
-            transitionImage.material.SetFloat("_Radius", radius);
-            
-            // Keep image fully visible
+            // size: 0 = covered (black), 1 = open (visible)
+            // Use minRadius to maxRadius range for proper closure
+            float radius = Mathf.Lerp(minRadius, maxRadius, size);
+            transitionMaterial.SetFloat("_Radius", radius);
+
+            // Keep image visible
             Color color = transitionImage.color;
             color.a = 1f;
             transitionImage.color = color;
         }
         else
         {
-            // Fallback: simple fade if shader not set up
+            // Fallback: simple fade
             Color color = transitionImage.color;
             color.a = 1f - size; // 0 = transparent, 1 = black
             transitionImage.color = color;
