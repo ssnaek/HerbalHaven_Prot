@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 43600f5728f39af4ca16a529c61fe956, type: 3}
-  m_Name: Mugwort
+  m_Name: Lagundi
   m_EditorClassIdentifier: 
-  plantName: Mugwort
-  plantID: mugwort
-  icon: {fileID: 21300000, guid: 788f43c1a92ca0642aed63892950f492, type: 3}
-  plantPrefab: {fileID: 6921645055305499216, guid: e2140f51a4db7a74f91c6066b64a8217, type: 3}
+  plantName: Lagundi
+  plantID: lagundi
+  icon: {fileID: 0}
+  plantPrefab: {fileID: 0}
   yieldPerPick: 1
   maxStack: 99
-  journalEntry: {fileID: 0}
-  rarity: 1
-  uses: 
+  journalEntry: {fileID: 11400000, guid: bfbf10099cc22354b9ce8aecb5ae8659, type: 2}
+  rarity: 0
+  uses: 0700000001000000

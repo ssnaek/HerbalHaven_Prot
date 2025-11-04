@@ -36,18 +36,19 @@ public class PlantDataSO : ScriptableObject
         Uncommon,   // 25% chance
         Rare        // 5% chance
     }
-    
+
     public enum HerbUse
     {
-        Healing,        // Treats wounds, injuries
-        Calming,        // Reduces stress, anxiety
-        Energizing,     // Boosts energy, stamina
-        Digestive,      // Aids digestion
-        AntiInflammatory, // Reduces inflammation
-        Fever,          // Treats fevers
-        Pain,           // Pain relief
-        Respiratory,    // Helps breathing, coughs
-        Immune,         // Boosts immune system
-        Sleep           // Aids sleep
+        Cough,        // Anti-cough
+        Colds,        // Anti-cold
+        Fever,         // Anti-fever
+        Headaches,
+        Wounds, 
+        Sore_throat,     // Anti-sore throat
+        Blood_pressure,     // Anti-sore throat
+        Asthma,      // Aids asthma
+        Inflammation, // Reduces inflammation
+        Bad_Gut,          // Treats diarrhea, abdominal pain, etc.
+        Sleep,           // Sleep relief
     }
 }

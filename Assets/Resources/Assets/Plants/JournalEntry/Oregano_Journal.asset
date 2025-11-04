@@ -10,13 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 60bf832aac1a3204a801cbcce682b40d, type: 3}
-  m_Name: Ginger_Journal
+  m_Name: Oregano_Journal
   m_EditorClassIdentifier: 
-  plantID: ginger
-  displayName: Ginjah
-  icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
-  plantPhoto: {fileID: 10911, guid: 0000000000000000f000000000000000, type: 0}
-  description: TESTY TEST TEST!!
-  scientificName: butt
-  habitat: idk
-  uses: fart i guess
+  plantID: oregano
+  displayName: Oregano
+  icon: {fileID: 0}
+  plantPhoto: {fileID: 21300000, guid: e7443253b4805e748b0e19fbd3aabfb9, type: 3}
+  description: A type of oregano, its leaves are traditionally used as tea to remedy
+    asthma, sore throat, and other ailments.
+  scientificName: Coleus amboinicus
+  habitat: 
+  uses: Asthma, sore throat

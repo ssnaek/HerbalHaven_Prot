@@ -29,8 +29,7 @@ public class WaterDepthTeleporter : MonoBehaviour
         }
         else if (!col.isTrigger)
         {
-            Debug.LogWarning("[WaterDepthTeleporter] Collider is not a trigger! Checking 'Is Trigger'...");
-            col.isTrigger = true;
+            Debug.LogWarning("Collider is not trigger");
         }
     }
 
