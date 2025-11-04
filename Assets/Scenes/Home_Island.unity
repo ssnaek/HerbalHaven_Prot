@@ -18063,6 +18063,18 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6782500040782645904, guid: dba0fbd8be1d6fe4e8bf91dd9e9d1c70, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6782500040782645904, guid: dba0fbd8be1d6fe4e8bf91dd9e9d1c70, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6782500040782645904, guid: dba0fbd8be1d6fe4e8bf91dd9e9d1c70, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -18269,7 +18281,7 @@ MonoBehaviour:
   use24HourFormat: 0
   timeText: {fileID: 1809248778349178086}
   dayText: {fileID: 1310504291814593444}
-  nextSceneName: Herb_Island
+  nextSceneName: ClinicScene
   dayEndDialogueNode: DayEndDialogue
   waitForDialogue: 1
   showDebugLogs: 1

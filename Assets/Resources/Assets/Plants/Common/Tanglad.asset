@@ -19,5 +19,5 @@ MonoBehaviour:
   yieldPerPick: 1
   maxStack: 99
   journalEntry: {fileID: 11400000, guid: 6e53bb2693b871c46b151383aea37ebf, type: 2}
-  rarity: 2
+  rarity: 0
   uses: 0000000002000000

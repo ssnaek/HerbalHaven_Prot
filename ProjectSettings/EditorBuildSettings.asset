@@ -5,7 +5,7 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Herb_Island.unity
     guid: f1b22949967c4fc42b3bd3401c8f638b
   - enabled: 1
@@ -14,4 +14,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/HerbIsland2.unity
     guid: 88349aa37b191a54c93f91b961ee9e72
+  - enabled: 1
+    path: Assets/Scenes/ClinicScene.unity
+    guid: 9ad37de7f1cf3054d9e7402b58d91649
   m_configObjects: {}

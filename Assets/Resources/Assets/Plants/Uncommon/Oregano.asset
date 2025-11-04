@@ -15,9 +15,9 @@ MonoBehaviour:
   plantName: Oregano
   plantID: oregano
   icon: {fileID: 21300000, guid: 65506db2842368f469d4e58d4c925769, type: 3}
-  plantPrefab: {fileID: 5673509459474679747, guid: c94fa5476f3ebb542b92ba07efe55ce5, type: 3}
+  plantPrefab: {fileID: 8849751107290419365, guid: eb800b91bc9e7c44bb04cf0cc1504a46, type: 3}
   yieldPerPick: 1
   maxStack: 99
   journalEntry: {fileID: 11400000, guid: 652d42ca4ba176c44bd13bc5ab479519, type: 2}
-  rarity: 2
+  rarity: 1
   uses: 0500000007000000
