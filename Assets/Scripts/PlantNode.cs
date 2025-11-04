@@ -5,6 +5,7 @@ using UnityEngine;
 /// Plant node that spawns multiple plant types based on rarity weights.
 /// Respawns daily based on GlobalPlantManager's regeneration multiplier.
 /// Now uses PlantDataSO assets for easy configuration!
+/// FIXED: Preserves prefab rotation when spawning plants.
 /// </summary>
 public class PlantNode : MonoBehaviour
 {
@@ -99,7 +100,11 @@ public class PlantNode : MonoBehaviour
             Vector3 spawnPos = transform.position + Random.insideUnitSphere * spawnRadius;
             spawnPos.y = transform.position.y;
 
-            GameObject plant = Instantiate(selectedPlant.plantPrefab, spawnPos, Quaternion.identity, transform);
+            // FIX: Use prefab's rotation instead of Quaternion.identity
+            // This preserves any rotation adjustments made to the prefab in Unity editor
+            Quaternion spawnRotation = selectedPlant.plantPrefab.transform.rotation;
+            
+            GameObject plant = Instantiate(selectedPlant.plantPrefab, spawnPos, spawnRotation, transform);
             plant.name = $"{selectedPlant.plantName}_{i}";
 
             InteractablePlant interactable = plant.GetComponent<InteractablePlant>();
@@ -193,7 +198,7 @@ public class PlantNode : MonoBehaviour
 
     void CollectPlant(GameObject plant, PlantDataSO plantData)
     {
-        if (showDebugLogs) Debug.Log($"[PlantNode] ►►► CollectPlant('{plant.name}') ◄◄◄");
+        if (showDebugLogs) Debug.Log($"[PlantNode] ►►►CollectPlant('{plant.name}') ◄◄◄");
         
         bool removed = spawnedPlants.Remove(plant);
         if (showDebugLogs) Debug.Log($"[PlantNode] Removed from list: {removed}");

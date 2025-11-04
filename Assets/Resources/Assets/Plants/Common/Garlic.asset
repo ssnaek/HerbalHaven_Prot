@@ -15,8 +15,8 @@ MonoBehaviour:
   plantName: Garlic
   plantID: garlic
   icon: {fileID: 0}
-  plantPrefab: {fileID: 0}
-  yieldPerPick: 2
+  plantPrefab: {fileID: 5439706455614435400, guid: 492eca600b094c94f9ad665b33f94948, type: 3}
+  yieldPerPick: 1
   maxStack: 99
   journalEntry: {fileID: 11400000, guid: 79887e3dda661d64ab9a021ea85d9809, type: 2}
   rarity: 0

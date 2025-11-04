@@ -15,7 +15,7 @@ MonoBehaviour:
   plantName: Bayabas
   plantID: bayabas
   icon: {fileID: 0}
-  plantPrefab: {fileID: 4799177648633890094, guid: b8256fda2ba737a4fa2f3c05c86dbcdd, type: 3}
+  plantPrefab: {fileID: 5082809766258154376, guid: b72bf8b3c441ab943a80cdca20a06617, type: 3}
   yieldPerPick: 1
   maxStack: 99
   journalEntry: {fileID: 11400000, guid: c2436f4fe644d4e44a80156e56b92b5e, type: 2}

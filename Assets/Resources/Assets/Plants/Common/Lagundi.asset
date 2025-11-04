@@ -15,7 +15,7 @@ MonoBehaviour:
   plantName: Lagundi
   plantID: lagundi
   icon: {fileID: 0}
-  plantPrefab: {fileID: 0}
+  plantPrefab: {fileID: 5492990480860198796, guid: fa3ef893eb2f2bb40a7029aea77c8692, type: 3}
   yieldPerPick: 1
   maxStack: 99
   journalEntry: {fileID: 11400000, guid: bfbf10099cc22354b9ce8aecb5ae8659, type: 2}

@@ -15,7 +15,7 @@ MonoBehaviour:
   plantName: 
   plantID: 
   icon: {fileID: 0}
-  plantPrefab: {fileID: 0}
+  plantPrefab: {fileID: 6350906414385177236, guid: 91d3481cdc419be4d93f12d1a7f5de76, type: 3}
   yieldPerPick: 1
   maxStack: 99
   journalEntry: {fileID: 11400000, guid: 6a112ab8e4a9fce4195bc5cf00c9d2c6, type: 2}

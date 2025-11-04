@@ -15,9 +15,9 @@ MonoBehaviour:
   plantName: Ginger
   plantID: ginger
   icon: {fileID: 21300000, guid: a2b2728333fbc414a84cef7311506a7f, type: 3}
-  plantPrefab: {fileID: 6140300859535827464, guid: e04639fe875fae142a9b5a2c27305de0, type: 3}
+  plantPrefab: {fileID: 7379749658598820447, guid: bc44cbccca21e2542ab46b202d61c0ff, type: 3}
   yieldPerPick: 1
   maxStack: 99
-  journalEntry: {fileID: 11400000, guid: 5bfdda77956e0424b8211f111d5bd8c6, type: 2}
+  journalEntry: {fileID: 11400000, guid: fafc0ca47f20c0d4e9df1a6c793f9ce8, type: 2}
   rarity: 0
   uses: 0000000003000000

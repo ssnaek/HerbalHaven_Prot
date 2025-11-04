@@ -1,8 +1,7 @@
 ﻿title: DayEndDialogue
 ---
-Narrator: The day has ended. Time to head back!
--> Continue to next day
-    Narrator: See you tomorrow!
+YOU: It's hit 10, it's time to head to the clinic.
+-> Continue to clinic
 ===
 
 

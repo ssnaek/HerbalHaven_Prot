@@ -15,7 +15,7 @@ MonoBehaviour:
   plantName: Damong maria
   plantID: damongmaria
   icon: {fileID: 21300000, guid: 788f43c1a92ca0642aed63892950f492, type: 3}
-  plantPrefab: {fileID: 6921645055305499216, guid: e2140f51a4db7a74f91c6066b64a8217, type: 3}
+  plantPrefab: {fileID: 3742739994170342558, guid: 046a6ea91dee0dd41aa889728711cfef, type: 3}
   yieldPerPick: 1
   maxStack: 99
   journalEntry: {fileID: 11400000, guid: 07bbe4e64097d724382fb99bde908d40, type: 2}
