@@ -1,24 +1,29 @@
 using UnityEngine;
+using UnityEngine.Audio;
 using System.Collections;
 using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Centralized audio manager for music and sound effects.
-/// Handles music crossfading between scenes and SFX playback.
+/// Handles music crossfading between scenes, SFX playback, and volume mixing.
 /// Singleton - persists across scenes.
 /// </summary>
 public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance { get; private set; }
 
+    [Header("Audio Mixer")]
+    [Tooltip("Main audio mixer asset")]
+    public AudioMixer audioMixer;
+
     [Header("Music")]
     [Tooltip("Two audio sources for crossfading")]
     public AudioSource musicSource1;
     public AudioSource musicSource2;
     
-    [Tooltip("Default music volume")]
+    [Tooltip("Default music volume (0-1)")]
     [Range(0f, 1f)]
-    public float musicVolume = 0.7f;
+    public float defaultMusicVolume = 0.7f;
     
     [Tooltip("Crossfade duration (seconds)")]
     public float crossfadeDuration = 2f;
@@ -27,9 +32,14 @@ public class AudioManager : MonoBehaviour
     [Tooltip("Audio source for one-shot SFX")]
     public AudioSource sfxSource;
     
-    [Tooltip("Default SFX volume")]
+    [Tooltip("Default SFX volume (0-1)")]
     [Range(0f, 1f)]
-    public float sfxVolume = 1f;
+    public float defaultSFXVolume = 1f;
+
+    [Header("Volume Settings")]
+    [Tooltip("Default master volume (0-1)")]
+    [Range(0f, 1f)]
+    public float defaultMasterVolume = 0.8f;
 
     [Header("Debug")]
     public bool showDebugLogs = false;
@@ -37,6 +47,11 @@ public class AudioManager : MonoBehaviour
     private AudioSource currentMusicSource;
     private AudioSource nextMusicSource;
     private bool isCrossfading = false;
+
+    // PlayerPrefs keys for saving volume settings
+    private const string MASTER_VOLUME_KEY = "MasterVolume";
+    private const string MUSIC_VOLUME_KEY = "MusicVolume";
+    private const string SFX_VOLUME_KEY = "SFXVolume";
 
     void Awake()
     {
@@ -53,6 +68,7 @@ public class AudioManager : MonoBehaviour
         }
 
         SetupAudioSources();
+        LoadVolumeSettings();
     }
 
     void Start()
@@ -96,16 +112,24 @@ public class AudioManager : MonoBehaviour
         // Configure music sources
         musicSource1.loop = true;
         musicSource1.playOnAwake = false;
-        musicSource1.volume = 0f;
+        musicSource1.volume = 1f; // Controlled by mixer
 
         musicSource2.loop = true;
         musicSource2.playOnAwake = false;
-        musicSource2.volume = 0f;
+        musicSource2.volume = 1f; // Controlled by mixer
 
         // Configure SFX source
         sfxSource.loop = false;
         sfxSource.playOnAwake = false;
-        sfxSource.volume = sfxVolume;
+        sfxSource.volume = 1f; // Controlled by mixer
+
+        // Assign to mixer groups if available
+        if (audioMixer != null)
+        {
+            musicSource1.outputAudioMixerGroup = audioMixer.FindMatchingGroups("Music")[0];
+            musicSource2.outputAudioMixerGroup = audioMixer.FindMatchingGroups("Music")[0];
+            sfxSource.outputAudioMixerGroup = audioMixer.FindMatchingGroups("SFX")[0];
+        }
 
         // Start with source1 as current
         currentMusicSource = musicSource1;
@@ -115,9 +139,131 @@ public class AudioManager : MonoBehaviour
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if (showDebugLogs) Debug.Log($"[AudioManager] Scene loaded: {scene.name}");
+    }
+
+    // ==================== VOLUME CONTROL (MIXER) ====================
+
+    /// <summary>
+    /// Set master volume (0-1)
+    /// </summary>
+    public void SetMasterVolume(float volume)
+    {
+        if (audioMixer == null)
+        {
+            Debug.LogWarning("[AudioManager] No Audio Mixer assigned!");
+            return;
+        }
+
+        float dbVolume = VolumeToDecibels(volume);
+        audioMixer.SetFloat("MasterVolume", dbVolume);
+        PlayerPrefs.SetFloat(MASTER_VOLUME_KEY, volume);
+        PlayerPrefs.Save();
+
+        if (showDebugLogs)
+            Debug.Log($"[AudioManager] Master volume set to {volume:F2} ({dbVolume:F1} dB)");
+    }
+
+    /// <summary>
+    /// Set music volume (0-1)
+    /// </summary>
+    public void SetMusicVolume(float volume)
+    {
+        if (audioMixer == null)
+        {
+            Debug.LogWarning("[AudioManager] No Audio Mixer assigned!");
+            return;
+        }
+
+        float dbVolume = VolumeToDecibels(volume);
+        audioMixer.SetFloat("MusicVolume", dbVolume);
+        PlayerPrefs.SetFloat(MUSIC_VOLUME_KEY, volume);
+        PlayerPrefs.Save();
+
+        if (showDebugLogs)
+            Debug.Log($"[AudioManager] Music volume set to {volume:F2} ({dbVolume:F1} dB)");
+    }
+
+    /// <summary>
+    /// Set SFX volume (0-1)
+    /// </summary>
+    public void SetSFXVolume(float volume)
+    {
+        if (audioMixer == null)
+        {
+            Debug.LogWarning("[AudioManager] No Audio Mixer assigned!");
+            return;
+        }
+
+        float dbVolume = VolumeToDecibels(volume);
+        audioMixer.SetFloat("SFXVolume", dbVolume);
+        PlayerPrefs.SetFloat(SFX_VOLUME_KEY, volume);
+        PlayerPrefs.Save();
+
+        if (showDebugLogs)
+            Debug.Log($"[AudioManager] SFX volume set to {volume:F2} ({dbVolume:F1} dB)");
+    }
+
+    /// <summary>
+    /// Get current master volume (0-1)
+    /// </summary>
+    public float GetMasterVolume()
+    {
+        return PlayerPrefs.GetFloat(MASTER_VOLUME_KEY, defaultMasterVolume);
+    }
+
+    /// <summary>
+    /// Get current music volume (0-1)
+    /// </summary>
+    public float GetMusicVolume()
+    {
+        return PlayerPrefs.GetFloat(MUSIC_VOLUME_KEY, defaultMusicVolume);
+    }
+
+    /// <summary>
+    /// Get current SFX volume (0-1)
+    /// </summary>
+    public float GetSFXVolume()
+    {
+        return PlayerPrefs.GetFloat(SFX_VOLUME_KEY, defaultSFXVolume);
+    }
+
+    /// <summary>
+    /// Load saved volume settings from PlayerPrefs
+    /// </summary>
+    void LoadVolumeSettings()
+    {
+        float masterVol = GetMasterVolume();
+        float musicVol = GetMusicVolume();
+        float sfxVol = GetSFXVolume();
+
+        SetMasterVolume(masterVol);
+        SetMusicVolume(musicVol);
+        SetSFXVolume(sfxVol);
+
+        if (showDebugLogs)
+            Debug.Log($"[AudioManager] Loaded volumes - Master: {masterVol:F2}, Music: {musicVol:F2}, SFX: {sfxVol:F2}");
+    }
+
+    /// <summary>
+    /// Convert linear volume (0-1) to decibels (-80 to 0)
+    /// Audio mixers use logarithmic scale
+    /// </summary>
+    float VolumeToDecibels(float volume)
+    {
+        // Clamp volume to avoid log(0)
+        volume = Mathf.Clamp(volume, 0.0001f, 1f);
         
-        // Auto-play music for scene (you can set this up per scene)
-        // For now, this is just a hook - you'll call PlayMusic() manually
+        // Convert to decibels (logarithmic)
+        // -80 dB is effectively silent
+        return Mathf.Log10(volume) * 20f;
+    }
+
+    /// <summary>
+    /// Convert decibels to linear volume (0-1)
+    /// </summary>
+    float DecibelsToVolume(float db)
+    {
+        return Mathf.Pow(10f, db / 20f);
     }
 
     // ==================== MUSIC ====================
@@ -151,7 +297,7 @@ public class AudioManager : MonoBehaviour
             // Play immediately
             if (showDebugLogs) Debug.Log($"[AudioManager] Playing {musicClip.name}");
             currentMusicSource.clip = musicClip;
-            currentMusicSource.volume = musicVolume;
+            currentMusicSource.volume = 1f; // Mixer controls actual volume
             currentMusicSource.Play();
         }
     }
@@ -174,8 +320,8 @@ public class AudioManager : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = elapsed / crossfadeDuration;
 
-            currentMusicSource.volume = Mathf.Lerp(musicVolume, 0f, t);
-            nextMusicSource.volume = Mathf.Lerp(0f, musicVolume, t);
+            currentMusicSource.volume = Mathf.Lerp(1f, 0f, t);
+            nextMusicSource.volume = Mathf.Lerp(0f, 1f, t);
 
             yield return null;
         }
@@ -184,7 +330,7 @@ public class AudioManager : MonoBehaviour
         currentMusicSource.Stop();
         currentMusicSource.volume = 0f;
 
-        nextMusicSource.volume = musicVolume;
+        nextMusicSource.volume = 1f;
 
         // Swap sources
         AudioSource temp = currentMusicSource;
@@ -229,15 +375,6 @@ public class AudioManager : MonoBehaviour
         currentMusicSource.volume = 0f;
     }
 
-    /// <summary>
-    /// Set music volume
-    /// </summary>
-    public void SetMusicVolume(float volume)
-    {
-        musicVolume = Mathf.Clamp01(volume);
-        currentMusicSource.volume = musicVolume;
-    }
-
     // ==================== SOUND EFFECTS ====================
 
     /// <summary>
@@ -251,7 +388,7 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
-        sfxSource.PlayOneShot(sfxClip, sfxVolume * volumeMultiplier);
+        sfxSource.PlayOneShot(sfxClip, volumeMultiplier);
 
         if (showDebugLogs) Debug.Log($"[AudioManager] Playing SFX: {sfxClip.name}");
     }
@@ -267,17 +404,25 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
-        AudioSource.PlayClipAtPoint(sfxClip, position, sfxVolume * volumeMultiplier);
+        // Create temporary audio source at position
+        GameObject tempGO = new GameObject("TempAudio");
+        tempGO.transform.position = position;
+        AudioSource tempSource = tempGO.AddComponent<AudioSource>();
+        
+        // Assign to mixer
+        if (audioMixer != null)
+        {
+            tempSource.outputAudioMixerGroup = audioMixer.FindMatchingGroups("SFX")[0];
+        }
+        
+        tempSource.clip = sfxClip;
+        tempSource.volume = volumeMultiplier;
+        tempSource.spatialBlend = 1f; // 3D sound
+        tempSource.Play();
+
+        // Destroy after clip finishes
+        Destroy(tempGO, sfxClip.length);
 
         if (showDebugLogs) Debug.Log($"[AudioManager] Playing SFX at {position}: {sfxClip.name}");
-    }
-
-    /// <summary>
-    /// Set SFX volume
-    /// </summary>
-    public void SetSFXVolume(float volume)
-    {
-        sfxVolume = Mathf.Clamp01(volume);
-        sfxSource.volume = sfxVolume;
     }
 }
