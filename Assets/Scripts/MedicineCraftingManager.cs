@@ -30,6 +30,9 @@ public class MedicineCraftingManager : MonoBehaviour
     private PlantDataSO[] selectedHerbs = new PlantDataSO[3];
     private int currentSlotIndex = 0;
     
+    // Track herbs that were removed from inventory (for restoration on reset)
+    private List<PlantDataSO> removedHerbs = new List<PlantDataSO>();
+    
     void Start()
     {
         // Wire up buttons
@@ -60,6 +63,37 @@ public class MedicineCraftingManager : MonoBehaviour
             return;
         }
         
+        // Check if herb is available in inventory
+        if (InventorySystem.Instance != null)
+        {
+            if (!InventorySystem.Instance.HasItem(herbData.plantID))
+            {
+                if (showDebugLogs) Debug.LogWarning($"[Crafting] {herbData.plantName} not in inventory!");
+                PlaySound(sfxLibrary?.errorSound);
+                return;
+            }
+            
+            int availableQuantity = InventorySystem.Instance.GetItemQuantity(herbData.plantID);
+            if (availableQuantity <= 0)
+            {
+                if (showDebugLogs) Debug.LogWarning($"[Crafting] No {herbData.plantName} available!");
+                PlaySound(sfxLibrary?.errorSound);
+                return;
+            }
+            
+            // Remove one herb from inventory
+            bool removed = InventorySystem.Instance.RemoveItem(herbData.plantID, 1);
+            if (!removed)
+            {
+                if (showDebugLogs) Debug.LogWarning($"[Crafting] Failed to remove {herbData.plantName} from inventory!");
+                PlaySound(sfxLibrary?.errorSound);
+                return;
+            }
+            
+            // Track this herb for potential restoration on reset
+            removedHerbs.Add(herbData);
+        }
+        
         // Add herb to slot
         selectedHerbs[currentSlotIndex] = herbData;
         
@@ -84,6 +118,22 @@ public class MedicineCraftingManager : MonoBehaviour
     public void ResetSlots()
     {
         if (showDebugLogs) Debug.Log("[Crafting] Resetting slots");
+        
+        // Return all removed herbs back to inventory
+        if (InventorySystem.Instance != null)
+        {
+            foreach (PlantDataSO herb in removedHerbs)
+            {
+                if (herb != null)
+                {
+                    InventorySystem.Instance.AddItem(herb.plantID, herb.plantName, herb.icon, 1, herb);
+                    if (showDebugLogs) Debug.Log($"[Crafting] Returned {herb.plantName} to inventory");
+                }
+            }
+        }
+        
+        // Clear tracking list
+        removedHerbs.Clear();
         
         for (int i = 0; i < 3; i++)
         {
@@ -139,13 +189,38 @@ public class MedicineCraftingManager : MonoBehaviour
             {
                 Debug.Log($"  - {prop}");
             }
+            Debug.Log($"[Crafting] Herbs permanently consumed: {removedHerbs.Count}");
         }
         
         PlaySound(sfxLibrary?.successSound);
         
         // TODO: Create MedicineData object and store/submit it
-        // For now, just reset
-        ResetSlots();
+        
+        // Clear tracking list - herbs are now permanently consumed
+        removedHerbs.Clear();
+        
+        // Reset slots (herbs won't be returned since removedHerbs is now empty)
+        ClearSlots();
+    }
+    
+    /// <summary>
+    /// Clear slots without returning herbs (used after crafting)
+    /// </summary>
+    void ClearSlots()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            selectedHerbs[i] = null;
+            
+            if (herbSlots[i] != null)
+            {
+                herbSlots[i].sprite = emptySlotSprite;
+                herbSlots[i].color = new Color(1f, 1f, 1f, 0.3f); // Transparent
+            }
+        }
+        
+        currentSlotIndex = 0;
+        UpdateCraftButton();
     }
     
     void UpdateCraftButton()

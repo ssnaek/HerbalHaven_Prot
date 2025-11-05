@@ -11031,7 +11031,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Button
+  m_text: Reset
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -11479,7 +11479,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Button
+  m_text: Craft
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -18088,6 +18088,11 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1677092799}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1703178838 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3450678359562971522, guid: 33bb5e59ca515da449110a41d6d1b1b8, type: 3}
+  m_PrefabInstance: {fileID: 8617212993505086496}
+  m_PrefabAsset: {fileID: 0}
 --- !u!43 &1719265734
 Mesh:
   m_ObjectHideFlags: 0
@@ -19088,9 +19093,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9a06ec390a482a64597c978dcf78316e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scrollContent: {fileID: 0}
-  herbItemPrefab: {fileID: 0}
-  craftingManager: {fileID: 0}
+  scrollContent: {fileID: 2078322995}
+  herbItemPrefab: {fileID: 1703178838}
+  craftingManager: {fileID: 1593762548}
   showDebugLogs: 0
 --- !u!1 &1789008380
 GameObject:

@@ -5,9 +5,9 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
-    path: Assets/Scenes/Herb_Island.unity
-    guid: f1b22949967c4fc42b3bd3401c8f638b
+  - enabled: 1
+    path: Assets/Scenes/Main_Menu.unity
+    guid: 80f24fa81c7664241bd0fe0219e97850
   - enabled: 1
     path: Assets/Scenes/Home_Island.unity
     guid: 0b07603d0aa0b894ca3913ab2e9076f4
