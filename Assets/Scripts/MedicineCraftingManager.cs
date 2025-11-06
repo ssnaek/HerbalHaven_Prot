@@ -36,6 +36,15 @@ public class MedicineCraftingManager : MonoBehaviour
 	[Tooltip("Symptoms required by the current note/patient")] 
 	public List<PlantDataSO.HerbUse> requiredSymptoms = new List<PlantDataSO.HerbUse>();
 	
+	[Tooltip("If true, ShowRequiredSymptoms will randomize the requiredSymptoms list")] 
+	public bool randomizeOnShow = false;
+	
+	[Tooltip("How many random symptoms to spawn when randomizing")] 
+	[Range(1, 5)] public int randomSymptomsCount = 3;
+
+	// Track which day the symptoms were last generated to avoid re-rolling on button spam
+	private int lastGeneratedDay = -1;
+	
 	[Tooltip("Parent container to populate symptom rows (optional)")]
 	public Transform notesContainer;
 	
@@ -81,7 +90,23 @@ public class MedicineCraftingManager : MonoBehaviour
         ResetSlots();
         
         UpdateCraftButton();
+
+		// Subscribe to new day event to re-roll symptoms once per day
+		if (TimeSystem.Instance != null)
+		{
+			TimeSystem.Instance.onNewDayCallback += OnNewDayStarted;
+			// Ensure we have a set for the current day at startup
+			EnsureSymptomsForToday();
+		}
     }
+
+	void OnDestroy()
+	{
+		if (TimeSystem.Instance != null)
+		{
+			TimeSystem.Instance.onNewDayCallback -= OnNewDayStarted;
+		}
+	}
     
     /// <summary>
     /// Add herb to next available slot
@@ -464,6 +489,120 @@ public class MedicineCraftingManager : MonoBehaviour
 				}
 				Debug.Log(allCovered ? "[Crafting] ✓ All symptoms covered" : "[Crafting] ✗ Some symptoms not covered");
 			}
+		}
+	}
+
+	/// <summary>
+	/// Clears all children under notesContainer.
+	/// </summary>
+	void ClearNotesUI()
+	{
+		if (notesContainer == null) return;
+		for (int i = notesContainer.childCount - 1; i >= 0; i--)
+		{
+			var child = notesContainer.GetChild(i);
+			GameObject.Destroy(child.gameObject);
+		}
+	}
+
+	/// <summary>
+	/// Public hook for your button: shows the required symptoms list before crafting.
+	/// Each row is initialized with unmatchedColor.
+	/// Wire your Button.onClick → MedicineCraftingManager.ShowRequiredSymptoms in the Inspector.
+	/// </summary>
+	public void ShowRequiredSymptoms()
+	{
+		// Only ensure symptoms for today; this will not reshuffle on repeated clicks within the same day
+		EnsureSymptomsForToday();
+
+		if (notesContainer == null || symptomItemPrefab == null)
+		{
+			if (showDebugLogs) Debug.LogWarning("[Crafting] Set notesContainer and symptomItemPrefab to display symptoms.");
+			return;
+		}
+
+		if (repopulateNotesListOnEvaluate)
+		{
+			ClearNotesUI();
+		}
+
+		if (requiredSymptoms == null || requiredSymptoms.Count == 0)
+		{
+			if (showDebugLogs) Debug.LogWarning("[Crafting] requiredSymptoms is empty – nothing to display.");
+			return;
+		}
+
+		foreach (var req in requiredSymptoms)
+		{
+			GameObject row = GameObject.Instantiate(symptomItemPrefab, notesContainer);
+			TextMeshProUGUI tmp = row.GetComponentInChildren<TextMeshProUGUI>();
+			if (tmp != null) tmp.text = req.ToString().Replace("_", " ");
+			else
+			{
+				Text text = row.GetComponentInChildren<Text>();
+				if (text != null) text.text = req.ToString().Replace("_", " ");
+			}
+			Image img = row.GetComponentInChildren<Image>();
+			if (img != null) img.color = unmatchedColor;
+		}
+	}
+
+	// Make sure we have a symptom set for the current in-game day (no spam re-rolls)
+	void EnsureSymptomsForToday()
+	{
+		int currentDay = TimeSystem.Instance != null ? TimeSystem.Instance.GetCurrentDay() : lastGeneratedDay;
+		if (requiredSymptoms == null) requiredSymptoms = new List<PlantDataSO.HerbUse>();
+		bool needGenerate = requiredSymptoms.Count == 0 || currentDay != lastGeneratedDay;
+		if (randomizeOnShow && needGenerate)
+		{
+			GenerateRandomRequiredSymptoms();
+			lastGeneratedDay = currentDay;
+		}
+	}
+
+	// Called when a new day starts – always re-roll a fresh set for the new day
+	void OnNewDayStarted(int day)
+	{
+		if (!randomizeOnShow) return; // honor toggle
+		GenerateRandomRequiredSymptoms();
+		lastGeneratedDay = day;
+		// Optionally refresh the visible list if it's on screen
+		if (notesContainer != null && symptomItemPrefab != null)
+		{
+			ShowRequiredSymptoms();
+		}
+	}
+
+	void GenerateRandomRequiredSymptoms()
+	{
+		if (requiredSymptoms == null) requiredSymptoms = new List<PlantDataSO.HerbUse>();
+		requiredSymptoms.Clear();
+		
+		// Build a list of all enum values
+		List<PlantDataSO.HerbUse> all = new List<PlantDataSO.HerbUse>();
+		foreach (PlantDataSO.HerbUse e in System.Enum.GetValues(typeof(PlantDataSO.HerbUse)))
+		{
+			all.Add(e);
+		}
+		
+		// Shuffle
+		for (int i = 0; i < all.Count; i++)
+		{
+			int j = Random.Range(i, all.Count);
+			var tmp = all[i];
+			all[i] = all[j];
+			all[j] = tmp;
+		}
+		
+		int take = Mathf.Clamp(randomSymptomsCount, 1, all.Count);
+		for (int i = 0; i < take; i++)
+		{
+			requiredSymptoms.Add(all[i]);
+		}
+		
+		if (showDebugLogs)
+		{
+			Debug.Log($"[Crafting] Randomized symptoms: {string.Join(", ", requiredSymptoms)}");
 		}
 	}
     
