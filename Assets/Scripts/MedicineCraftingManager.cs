@@ -20,11 +20,22 @@ public class MedicineCraftingManager : MonoBehaviour
     public Button craftButton;
     public Button resetButton;
     
+    [Header("Illness Selector")]
+    [Tooltip("Reference to the IllnessSelector to check required herb uses")]
+    public IllnessSelector illnessSelector;
+    
+    [Header("Scoring")]
+    [Tooltip("Points awarded for each correct herb use match")]
+    public int pointsPerMatch = 10;
+    
     [Header("Audio")]
     public SFXLibrary sfxLibrary;
     
     [Header("Debug")]
     public bool showDebugLogs = false;
+    
+    // Score tracking
+    private int currentScore = 0;
     
     // Currently selected herbs
     private PlantDataSO[] selectedHerbs = new PlantDataSO[3];
@@ -182,15 +193,20 @@ public class MedicineCraftingManager : MonoBehaviour
             }
         }
         
-        if (showDebugLogs)
+        // Calculate score based on matching herb uses with required illnesses
+        int craftScore = CalculateScore(combinedProperties);
+        currentScore += craftScore;
+        
+        // Log crafting results
+        Debug.Log("=== MEDICINE CRAFTED ===");
+        Debug.Log($"[Crafting] Crafted medicine with {combinedProperties.Count} properties:");
+        foreach (var prop in combinedProperties)
         {
-            Debug.Log($"[Crafting] Crafted medicine with {combinedProperties.Count} properties:");
-            foreach (var prop in combinedProperties)
-            {
-                Debug.Log($"  - {prop}");
-            }
-            Debug.Log($"[Crafting] Herbs permanently consumed: {removedHerbs.Count}");
+            Debug.Log($"  - {prop}");
         }
+        Debug.Log($"[Crafting] Score for this craft: {craftScore} points");
+        Debug.Log($"[Crafting] Total Score: {currentScore} points");
+        Debug.Log("========================");
         
         PlaySound(sfxLibrary?.successSound);
         
@@ -201,6 +217,58 @@ public class MedicineCraftingManager : MonoBehaviour
         
         // Reset slots (herbs won't be returned since removedHerbs is now empty)
         ClearSlots();
+    }
+    
+    /// <summary>
+    /// Calculate score based on how many herb uses match the required illnesses
+    /// </summary>
+    int CalculateScore(List<PlantDataSO.HerbUse> craftedProperties)
+    {
+        if (illnessSelector == null)
+        {
+            Debug.LogWarning("[Crafting] IllnessSelector not assigned! Cannot calculate score.");
+            return 0;
+        }
+        
+        // Get required herb uses from the illness selector
+        List<PlantDataSO.HerbUse> requiredUses = illnessSelector.GetRequiredHerbUses();
+        
+        if (requiredUses.Count == 0)
+        {
+            Debug.LogWarning("[Crafting] No illnesses selected! Cannot calculate score.");
+            return 0;
+        }
+        
+        int matches = 0;
+        List<PlantDataSO.HerbUse> matchedUses = new List<PlantDataSO.HerbUse>();
+        
+        // Count how many crafted properties match required illnesses
+        foreach (var craftedUse in craftedProperties)
+        {
+            if (requiredUses.Contains(craftedUse))
+            {
+                matches++;
+                matchedUses.Add(craftedUse);
+            }
+        }
+        
+        int score = matches * pointsPerMatch;
+        
+        // Detailed scoring log
+        Debug.Log($"[Scoring] Required illnesses: {requiredUses.Count}");
+        Debug.Log($"[Scoring] Crafted properties: {craftedProperties.Count}");
+        Debug.Log($"[Scoring] Correct matches: {matches}");
+        
+        if (matchedUses.Count > 0)
+        {
+            Debug.Log("[Scoring] Matched herb uses:");
+            foreach (var use in matchedUses)
+            {
+                Debug.Log($"  ✓ {use}");
+            }
+        }
+        
+        return score;
     }
     
     /// <summary>
@@ -243,6 +311,17 @@ public class MedicineCraftingManager : MonoBehaviour
     // Public getters
     public int GetSlotCount() => currentSlotIndex;
     public PlantDataSO[] GetSelectedHerbs() => selectedHerbs;
+    public int GetCurrentScore() => currentScore;
+    
+    /// <summary>
+    /// Reset the total score (call at start of new day)
+    /// </summary>
+    public void ResetScore()
+    {
+        currentScore = 0;
+        Debug.Log("[Crafting] Score reset to 0");
+    }
+    
     public List<PlantDataSO.HerbUse> GetCombinedProperties()
     {
         List<PlantDataSO.HerbUse> properties = new List<PlantDataSO.HerbUse>();
