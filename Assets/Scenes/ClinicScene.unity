@@ -17291,6 +17291,8 @@ MonoBehaviour:
   craftButton: {fileID: 1329904174}
   resetButton: {fileID: 15970400}
   sfxLibrary: {fileID: 0}
+  medicineIcon: {fileID: 21300000, guid: a2b2728333fbc414a84cef7311506a7f, type: 3}
+  medicineNamePrefix: Medicine
   showDebugLogs: 0
 --- !u!43 &1608825654
 Mesh:
