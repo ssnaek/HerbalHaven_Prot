@@ -4,7 +4,8 @@ using TMPro;
 using System.Collections.Generic;
 
 /// <summary>
-/// Main journal controller. Handles opening/closing and coordinating between list and detail view.
+/// Main journal controller with toggleable content views (Inventory/Settings).
+/// Handles opening/closing and coordinating between list and detail view.
 /// Now uses ShopItemData as primary source, with fallback to JournalPlantData for wild plants.
 /// </summary>
 public class JournalController : MonoBehaviour
@@ -15,11 +16,25 @@ public class JournalController : MonoBehaviour
     [Tooltip("The entire journal UI (both pages)")]
     public GameObject journalPanel;
     
+    [Header("Content Toggle Buttons")]
+    [Tooltip("Button to show Inventory view")]
+    public Button inventoryButton;
+    
+    [Tooltip("Button to show Settings view")]
+    public Button settingsButton;
+    
+    [Header("Content Panels - Left Page")]
+    public GameObject leftInventoryContent;
+    public GameObject leftSettingsContent;
+    
+    [Header("Content Panels - Right Page")]
+    public GameObject rightInventoryContent;
+    public GameObject rightSettingsContent;
+    
     [Header("Currency Display")]
     public TextMeshProUGUI currencyText;
-    public int playerCurrency = 100;
 
-    [Header("Left Page - Plant Details")]
+    [Header("Left Page - Plant Details (Inventory Mode)")]
     public Image plantPhoto;
     public TextMeshProUGUI plantNameText;
     public TextMeshProUGUI plantDescriptionText;
@@ -28,7 +43,7 @@ public class JournalController : MonoBehaviour
     public TextMeshProUGUI usesText;
     public GameObject noSelectionMessage;
 
-    [Header("Right Page - Plant List")]
+    [Header("Right Page - Plant List (Inventory Mode)")]
     public Transform plantListContainer;
     public GameObject plantListItemPrefab;
 
@@ -47,6 +62,10 @@ public class JournalController : MonoBehaviour
     private UIOpenAnimator animator;
     private List<GameObject> listItems = new List<GameObject>();
     private string currentSelectedPlantID = null;
+    
+    // Track current view mode
+    private enum ViewMode { Inventory, Settings }
+    private ViewMode currentMode = ViewMode.Inventory;
 
     void Start()
     {
@@ -58,6 +77,13 @@ public class JournalController : MonoBehaviour
         {
             Debug.LogWarning("[Journal] Multiple JournalControllers detected! Using first instance.");
         }
+
+        // Wire up toggle buttons
+        if (inventoryButton != null)
+            inventoryButton.onClick.AddListener(() => SwitchToInventoryView());
+        
+        if (settingsButton != null)
+            settingsButton.onClick.AddListener(() => SwitchToSettingsView());
 
         if (useAnimator)
         {
@@ -89,10 +115,90 @@ public class JournalController : MonoBehaviour
         if (InventorySystem.Instance != null)
         {
             InventorySystem.Instance.onInventoryChangedCallback += RefreshPlantList;
+            InventorySystem.Instance.onCurrencyChangedCallback += OnCurrencyChanged;
         }
 
+        // Start in Inventory view
+        SwitchToInventoryView();
         InitializeLeftPage();
         UpdateCurrencyDisplay();
+    }
+
+    /// <summary>
+    /// Switch to Inventory view (herbs/journal entries)
+    /// </summary>
+    void SwitchToInventoryView()
+    {
+        currentMode = ViewMode.Inventory;
+        
+        // Show inventory content
+        if (leftInventoryContent != null) leftInventoryContent.SetActive(true);
+        if (rightInventoryContent != null) rightInventoryContent.SetActive(true);
+        
+        // Hide settings content
+        if (leftSettingsContent != null) leftSettingsContent.SetActive(false);
+        if (rightSettingsContent != null) rightSettingsContent.SetActive(false);
+        
+        // Update button visuals if needed
+        UpdateToggleButtonVisuals();
+        
+        // Refresh plant list
+        if (journalPanel.activeSelf)
+        {
+            RefreshPlantList();
+        }
+        
+        if (showDebugLogs) Debug.Log("[Journal] Switched to Inventory view");
+    }
+
+    /// <summary>
+    /// Switch to Settings view (audio mixer, options, etc.)
+    /// </summary>
+    void SwitchToSettingsView()
+    {
+        currentMode = ViewMode.Settings;
+        
+        // Hide inventory content
+        if (leftInventoryContent != null) leftInventoryContent.SetActive(false);
+        if (rightInventoryContent != null) rightInventoryContent.SetActive(false);
+        
+        // Show settings content
+        if (leftSettingsContent != null) leftSettingsContent.SetActive(true);
+        if (rightSettingsContent != null) rightSettingsContent.SetActive(true);
+        
+        // Update button visuals if needed
+        UpdateToggleButtonVisuals();
+        
+        if (showDebugLogs) Debug.Log("[Journal] Switched to Settings view");
+    }
+
+    /// <summary>
+    /// Update toggle button visuals to show which is active
+    /// </summary>
+    void UpdateToggleButtonVisuals()
+    {
+        if (inventoryButton != null && settingsButton != null)
+        {
+            // You can customize this - change colors, scale, etc.
+            ColorBlock inventoryColors = inventoryButton.colors;
+            ColorBlock settingsColors = settingsButton.colors;
+            
+            if (currentMode == ViewMode.Inventory)
+            {
+                // Inventory button highlighted
+                inventoryColors.normalColor = new Color(1f, 1f, 1f, 1f);
+                settingsColors.normalColor = new Color(0.7f, 0.7f, 0.7f, 1f);
+            }
+            else
+            {
+                // Settings button highlighted
+                inventoryColors.normalColor = new Color(0.7f, 0.7f, 0.7f, 1f);
+                settingsColors.normalColor = new Color(1f, 1f, 1f, 1f);
+            }
+            
+            inventoryButton.colors = inventoryColors;
+            settingsButton.colors = settingsColors;
+        }
     }
 
     void InitializeLeftPage()
@@ -190,10 +296,15 @@ public class JournalController : MonoBehaviour
 
     public void OnJournalOpened()
     {
-        RefreshPlantList();
+        // Only refresh plant list if in inventory mode
+        if (currentMode == ViewMode.Inventory)
+        {
+            RefreshPlantList();
+        }
+        
         UpdateCurrencyDisplay();
         
-        if (currentSelectedPlantID == null)
+        if (currentMode == ViewMode.Inventory && currentSelectedPlantID == null)
         {
             ShowNoSelection();
         }
@@ -205,6 +316,9 @@ public class JournalController : MonoBehaviour
 
     public void RefreshPlantList()
     {
+        // Only refresh if in inventory mode
+        if (currentMode != ViewMode.Inventory) return;
+        
         if (showDebugLogs) Debug.Log("[Journal] Refreshing plant list");
 
         ClearList();
@@ -337,8 +451,6 @@ public class JournalController : MonoBehaviour
         Debug.LogWarning($"[Journal] No data found for '{plantID}'");
         ShowNoSelection();
     }
-
-    // Remove GetHerbData() - no longer needed!
 
     ShopItemData GetShopItemData(string plantID)
     {
@@ -569,42 +681,59 @@ public class JournalController : MonoBehaviour
 
     void UpdateCurrencyDisplay()
     {
-        if (currencyText != null)
+        if (currencyText != null && InventorySystem.Instance != null)
         {
-            currencyText.text = $"${playerCurrency}";
+            currencyText.text = $"${InventorySystem.Instance.GetCurrency()}";
         }
     }
 
     public void AddCurrency(int amount)
     {
-        playerCurrency += amount;
-        UpdateCurrencyDisplay();
-        
-        if (showDebugLogs) Debug.Log($"[Journal] Added ${amount}. Total: ${playerCurrency}");
+        if (InventorySystem.Instance != null)
+        {
+            InventorySystem.Instance.AddCurrency(amount);
+            UpdateCurrencyDisplay();
+            
+            if (showDebugLogs) Debug.Log($"[Journal] Added ${amount}. Total: ${InventorySystem.Instance.GetCurrency()}");
+        }
     }
 
     public bool RemoveCurrency(int amount)
     {
-        if (playerCurrency >= amount)
+        if (InventorySystem.Instance != null)
         {
-            playerCurrency -= amount;
+            bool success = InventorySystem.Instance.RemoveCurrency(amount);
             UpdateCurrencyDisplay();
             
-            if (showDebugLogs) Debug.Log($"[Journal] Spent ${amount}. Remaining: ${playerCurrency}");
-            return true;
+            if (showDebugLogs)
+            {
+                if (success)
+                    Debug.Log($"[Journal] Spent ${amount}. Remaining: ${InventorySystem.Instance.GetCurrency()}");
+                else
+                    Debug.Log($"[Journal] Not enough currency. Need ${amount}, have ${InventorySystem.Instance.GetCurrency()}");
+            }
+            
+            return success;
         }
-        
-        if (showDebugLogs) Debug.Log($"[Journal] Not enough currency. Need ${amount}, have ${playerCurrency}");
         return false;
     }
 
-    public int GetCurrency() => playerCurrency;
+    public int GetCurrency()
+    {
+        return InventorySystem.Instance != null ? InventorySystem.Instance.GetCurrency() : 0;
+    }
+
+    void OnCurrencyChanged(int newAmount)
+    {
+        UpdateCurrencyDisplay();
+    }
 
     void OnDestroy()
     {
         if (InventorySystem.Instance != null)
         {
             InventorySystem.Instance.onInventoryChangedCallback -= RefreshPlantList;
+            InventorySystem.Instance.onCurrencyChangedCallback -= OnCurrencyChanged;
         }
     }
 }

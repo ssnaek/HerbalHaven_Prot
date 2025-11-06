@@ -78,7 +78,7 @@ public class SaveLoadManager : MonoBehaviour
             lastSavedTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
             dayNumber = 1,
             currentTimeMinutes = 360, // 6:00 AM
-            playerCurrency = 100, // Starting money (adjust as needed)
+            playerCurrency = InventorySystem.Instance != null ? InventorySystem.Instance.startingCurrency : 100,
             previousDayHarvests = 0,
             totalHerbsCollected = 0,
             inventory = new List<SavedInventoryItem>()
@@ -143,7 +143,7 @@ public class SaveLoadManager : MonoBehaviour
         try
         {
             File.WriteAllText(currentSaveFilePath, json);
-            if (showDebugLogs) Debug.Log($"[SaveLoad] ✓ Game saved: {currentSave.saveName} (Day {currentSave.dayNumber})");
+            if (showDebugLogs) Debug.Log($"[SaveLoad] âœ“ Game saved: {currentSave.saveName} (Day {currentSave.dayNumber})");
         }
         catch (Exception e)
         {
@@ -165,9 +165,9 @@ public class SaveLoadManager : MonoBehaviour
         }
 
         // Currency
-        if (JournalController.Instance != null)
+        if (InventorySystem.Instance != null)
         {
-            currentSave.playerCurrency = JournalController.Instance.GetCurrency();
+            currentSave.playerCurrency = InventorySystem.Instance.GetCurrency();
         }
 
         // Inventory
@@ -219,7 +219,7 @@ public class SaveLoadManager : MonoBehaviour
             currentSave = JsonUtility.FromJson<SaveData>(json);
             currentSaveFilePath = filePath;
 
-            if (showDebugLogs) Debug.Log($"[SaveLoad] ✓ Loaded save: {currentSave.saveName} (Day {currentSave.dayNumber})");
+            if (showDebugLogs) Debug.Log($"[SaveLoad] âœ“ Loaded save: {currentSave.saveName} (Day {currentSave.dayNumber})");
 
             // Apply save data to game systems
             LoadGameStateIntoSystems();
@@ -250,9 +250,9 @@ public class SaveLoadManager : MonoBehaviour
         }
 
         // Set currency
-        if (JournalController.Instance != null)
+        if (InventorySystem.Instance != null)
         {
-            JournalController.Instance.playerCurrency = currentSave.playerCurrency;
+            InventorySystem.Instance.SetCurrency(currentSave.playerCurrency);
         }
 
         // Restore inventory
@@ -363,7 +363,7 @@ public class SaveLoadManager : MonoBehaviour
         try
         {
             File.Delete(filePath);
-            if (showDebugLogs) Debug.Log($"[SaveLoad] ✓ Deleted save: {saveID}");
+            if (showDebugLogs) Debug.Log($"[SaveLoad] âœ“ Deleted save: {saveID}");
             return true;
         }
         catch (Exception e)

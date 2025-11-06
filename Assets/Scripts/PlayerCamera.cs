@@ -8,13 +8,26 @@ public class PlayerCamera : MonoBehaviour
     public float maxDistance = 6f;
 
     public float zoomSpeed = 2f;
-    public float orbitSpeed = 150f;
-    public float lookSpeed = 2f;
+    
+    [Header("Sensitivity Settings")]
+    [Tooltip("Base orbit speed (third-person)")]
+    public float baseOrbitSpeed = 150f;
+    
+    [Tooltip("Base look speed (first-person)")]
+    public float baseLookSpeed = 2f;
+    
+    [Tooltip("Current sensitivity multiplier (0.1 - 3.0)")]
+    [Range(0.1f, 3.0f)]
+    public float sensitivityMultiplier = 1f;
 
     [Header("Collision Settings")]
     public float collisionRadius = 0.2f;      // Sphere collision radius for collision check
     public float collisionSmoothing = 5f;     // How fast camera adjusts to collisions
     public float collisionMinDistance = 1f;   // Minimum distance when colliding with terrain
+
+    // Actual speeds used (base * multiplier)
+    private float orbitSpeed;
+    private float lookSpeed;
 
     private float yaw = 0f;
     private float pitch = 15f;
@@ -22,7 +35,7 @@ public class PlayerCamera : MonoBehaviour
     private Camera cam;
     private int defaultCullingMask;
     private int playerModelMask;
-    private LayerMask collisionLayerMask; 
+    private LayerMask collisionLayerMask;
 
     void Start()
     {
@@ -34,6 +47,10 @@ public class PlayerCamera : MonoBehaviour
         collisionLayerMask = ~playerModelMask;
         
         currentDistance = distance;
+
+        // Load saved sensitivity
+        LoadSensitivity();
+        UpdateSpeeds();
     }
 
     void LateUpdate()
@@ -119,5 +136,54 @@ public class PlayerCamera : MonoBehaviour
     {
         float blend = Mathf.InverseLerp(maxDistance, minDistance, distance);
         return blend > 0.95f;
+    }
+
+    // ==================== SENSITIVITY CONTROL ====================
+
+    /// <summary>
+    /// Set camera sensitivity (0.1 - 3.0)
+    /// </summary>
+    public void SetSensitivity(float sensitivity)
+    {
+        sensitivityMultiplier = Mathf.Clamp(sensitivity, 0.1f, 3.0f);
+        UpdateSpeeds();
+        SaveSensitivity();
+    }
+
+    /// <summary>
+    /// Get current sensitivity multiplier
+    /// </summary>
+    public float GetSensitivity()
+    {
+        return sensitivityMultiplier;
+    }
+
+    /// <summary>
+    /// Update actual speeds based on base speeds and multiplier
+    /// </summary>
+    void UpdateSpeeds()
+    {
+        orbitSpeed = baseOrbitSpeed * sensitivityMultiplier;
+        lookSpeed = baseLookSpeed * sensitivityMultiplier;
+    }
+
+    /// <summary>
+    /// Save sensitivity to PlayerPrefs
+    /// </summary>
+    void SaveSensitivity()
+    {
+        PlayerPrefs.SetFloat("CameraSensitivity", sensitivityMultiplier);
+        PlayerPrefs.Save();
+    }
+
+    /// <summary>
+    /// Load sensitivity from PlayerPrefs
+    /// </summary>
+    void LoadSensitivity()
+    {
+        if (PlayerPrefs.HasKey("CameraSensitivity"))
+        {
+            sensitivityMultiplier = PlayerPrefs.GetFloat("CameraSensitivity");
+        }
     }
 }

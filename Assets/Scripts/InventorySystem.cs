@@ -2,19 +2,27 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Core inventory system. Stores items, tracks quantities, and notifies listeners of changes.
+/// Core inventory system. Stores items, tracks quantities, and manages currency.
 /// Singleton - access via InventorySystem.Instance
 /// Now supports storing PlantDataSO references for cross-scene herb access.
+/// Currency system moved here for persistent cross-scene management.
 /// </summary>
 public class InventorySystem : MonoBehaviour
 {
     public static InventorySystem Instance { get; private set; }
+
+    [Header("Currency")]
+    [Tooltip("Starting currency for new games")]
+    public int startingCurrency = 100;
 
     [Header("Debug")]
     public bool showDebugLogs = false;
 
     // Main inventory storage - itemID → item data
     private Dictionary<string, InventoryItemData> inventory = new Dictionary<string, InventoryItemData>();
+
+    // Currency
+    private int playerCurrency = 0;
 
     // Events for UI systems to listen to
     public delegate void OnInventoryChanged();
@@ -26,12 +34,18 @@ public class InventorySystem : MonoBehaviour
     public delegate void OnItemRemoved(string itemID, int quantityRemoved);
     public event OnItemRemoved onItemRemovedCallback;
 
+    public delegate void OnCurrencyChanged(int newAmount);
+    public event OnCurrencyChanged onCurrencyChangedCallback;
+
     void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            
+            // Initialize currency with starting amount
+            playerCurrency = startingCurrency;
         }
         else
         {
@@ -39,6 +53,8 @@ public class InventorySystem : MonoBehaviour
             return;
         }
     }
+
+    // ==================== INVENTORY METHODS ====================
 
     /// <summary>
     /// Add an item to inventory (without herb data)
@@ -162,5 +178,70 @@ public class InventorySystem : MonoBehaviour
             inventory[itemID].description = description;
             onInventoryChangedCallback?.Invoke();
         }
+    }
+
+    // ==================== CURRENCY METHODS ====================
+
+    /// <summary>
+    /// Get current player currency
+    /// </summary>
+    public int GetCurrency()
+    {
+        return playerCurrency;
+    }
+
+    /// <summary>
+    /// Set currency to a specific amount (used by save/load system)
+    /// </summary>
+    public void SetCurrency(int amount)
+    {
+        playerCurrency = Mathf.Max(0, amount);
+        
+        if (showDebugLogs) Debug.Log($"[Inventory] Currency set to ${playerCurrency}");
+        
+        onCurrencyChangedCallback?.Invoke(playerCurrency);
+    }
+
+    /// <summary>
+    /// Add currency to player's wallet
+    /// </summary>
+    public void AddCurrency(int amount)
+    {
+        if (amount <= 0) return;
+
+        playerCurrency += amount;
+        
+        if (showDebugLogs) Debug.Log($"[Inventory] Added ${amount}. Total: ${playerCurrency}");
+        
+        onCurrencyChangedCallback?.Invoke(playerCurrency);
+    }
+
+    /// <summary>
+    /// Remove currency from player's wallet. Returns true if successful.
+    /// </summary>
+    public bool RemoveCurrency(int amount)
+    {
+        if (amount <= 0) return false;
+
+        if (playerCurrency >= amount)
+        {
+            playerCurrency -= amount;
+            
+            if (showDebugLogs) Debug.Log($"[Inventory] Spent ${amount}. Remaining: ${playerCurrency}");
+            
+            onCurrencyChangedCallback?.Invoke(playerCurrency);
+            return true;
+        }
+        
+        if (showDebugLogs) Debug.Log($"[Inventory] Not enough currency. Need ${amount}, have ${playerCurrency}");
+        return false;
+    }
+
+    /// <summary>
+    /// Check if player has enough currency
+    /// </summary>
+    public bool HasEnoughCurrency(int amount)
+    {
+        return playerCurrency >= amount;
     }
 }

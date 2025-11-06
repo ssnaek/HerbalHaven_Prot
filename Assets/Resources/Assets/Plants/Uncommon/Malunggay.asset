@@ -15,7 +15,7 @@ MonoBehaviour:
   plantName: Malunggay
   plantID: malunggay
   icon: {fileID: 21300000, guid: 12222e4e4d3e639448d24692496e3ae1, type: 3}
-  plantPrefab: {fileID: 6224647541444186135, guid: d697e7a67cf33694ca929c29586a55aa, type: 3}
+  plantPrefab: {fileID: 2895389537882804373, guid: 0a1f510638b71714da6d0ee5d4200af3, type: 3}
   yieldPerPick: 1
   maxStack: 99
   journalEntry: {fileID: 11400000, guid: 920bef6755547dc4fac0728794226271, type: 2}

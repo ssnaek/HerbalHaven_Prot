@@ -39,7 +39,6 @@ public class PlayerController : MonoBehaviour
     // ---------------- Movement ----------------
     void HandleMovement()
     {
-        // WASD only - no arrow keys
         float h = 0f;
         float v = 0f;
 
@@ -68,7 +67,6 @@ public class PlayerController : MonoBehaviour
     // ---------------- Rotation ----------------
     void HandleRotation()
     {
-        // WASD only for rotation direction too
         float h = 0f;
         float v = 0f;
 
@@ -103,7 +101,7 @@ public class PlayerController : MonoBehaviour
             if (verticalVelocity < 0f)
                 verticalVelocity = -2f;
 
-            if (Input.GetButtonDown("Jump") && !IsOnSteepSlope())
+            if (Input.GetButtonDown("Jump"))
                 verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
         }
         else
@@ -120,7 +118,7 @@ public class PlayerController : MonoBehaviour
     }
 
     // ---------------- Slope Check ----------------
-    bool IsOnSteepSlope()
+   /* bool IsOnSteepSlope()
     {
         if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, controller.height / 2 + 0.5f))
         {
@@ -128,5 +126,5 @@ public class PlayerController : MonoBehaviour
             return angle > slopeLimit;
         }
         return false;
-    }
+    }*/
 }
