@@ -51,7 +51,4 @@ public class ShopItemData : ScriptableObject
 public enum ShopItemType
 {
     Seed,           // Plant seeds
-    Tool,           // Tools (future)
-    Decoration,     // Decorative items (future)
-    Consumable      // One-time use items (future)
 }

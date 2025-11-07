@@ -10,13 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 27de588f25755ad498fcac5632fa5830, type: 3}
-  m_Name: RedFlowerSeeds
+  m_Name: GingerSeed
   m_EditorClassIdentifier: 
-  itemID: red_flower_seeds
-  itemName: Red Flower Seeds
-  icon: {fileID: 21300000, guid: 12222e4e4d3e639448d24692496e3ae1, type: 3}
-  description: Plant these to grow red flowers!
-  price: 50
+  itemID: ginger_seed
+  itemName: Ginger root
+  icon: {fileID: 21300000, guid: 65c71d849f8867f4cae2bae7f848be4a, type: 3}
+  description: A fresh ginger root cutting
+  price: 30
   itemType: 0
-  plantID: red_flower
-  seedQuantity: 5
+  plantID: ginger
+  seedQuantity: 1
+  journalDescription: Plant in the clinic to grow ginger!
+  scientificName: 
+  uses: 

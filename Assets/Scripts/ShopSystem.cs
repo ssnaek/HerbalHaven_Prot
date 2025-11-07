@@ -342,7 +342,7 @@ public class ShopSystem : MonoBehaviour
             }
             else
             {
-                buyButtonText.text = $"Not Enough Money (Need ${currentSelectedItem.price})";
+                buyButtonText.text = $"(Need ${currentSelectedItem.price})";
             }
         }
     }
@@ -389,12 +389,6 @@ public class ShopSystem : MonoBehaviour
 
                     if (showDebugLogs) Debug.Log($"[Shop] Added {item.seedQuantity}x {item.itemName} to inventory");
                 }
-                break;
-
-            case ShopItemType.Tool:
-            case ShopItemType.Decoration:
-            case ShopItemType.Consumable:
-                if (showDebugLogs) Debug.Log($"[Shop] Gave {item.itemName} ({item.itemType})");
                 break;
         }
     }

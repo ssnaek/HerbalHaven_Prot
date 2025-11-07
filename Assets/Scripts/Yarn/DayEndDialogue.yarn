@@ -28,6 +28,10 @@ Al: Welcome to our island! Have any inquiries?
     Al: You have from 6 AM to 10 AM each day to collect herbs to use in the clinic.
     Al: Each harvest takes 30 minutes of game time, so do plan ahead on what herbs you'll need!
     <<jump TutorialStart>>
+-> How do I see which plants I collected?
+    Al: Your journal quite literally contains everything you need.
+    Al: You can press the 'J' key to open up your journal
+    <<jump TutorialStart>>
 -> See ya.
     Al: Alrighty! If you have any questions- Just Ask Al!
 ===
