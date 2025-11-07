@@ -12582,7 +12582,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1889795441}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9999813
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -15364,6 +15364,7 @@ MonoBehaviour:
   use24HourFormat: 0
   timeText: {fileID: 0}
   dayText: {fileID: 0}
+  nextSceneName: ClinicScene
   nextSceneName: ClinicScene
   dayEndDialogueNode: DayEndDialogue
   waitForDialogue: 1
