@@ -10,6 +10,8 @@ using System.Collections.Generic;
 /// </summary>
 public class GardenHotbar : MonoBehaviour
 {
+    public static GardenHotbar Instance { get; private set; }
+    
     [System.Serializable]
     public class HotbarSlot
     {
@@ -28,6 +30,7 @@ public class GardenHotbar : MonoBehaviour
         // Runtime data
         [HideInInspector] public string currentItemID;
         [HideInInspector] public bool isEmpty = true;
+        [HideInInspector] public Button button;
     }
     
     [Header("Hotbar Slots")]
@@ -38,10 +41,29 @@ public class GardenHotbar : MonoBehaviour
     [Tooltip("Suffix to identify seeds in inventory (e.g., '_seed')")]
     public string seedIDSuffix = "_seed";
     
+    [Header("Selection Visual")]
+    [Tooltip("Color to highlight selected slot")]
+    public Color selectedColor = new Color(1f, 1f, 0.5f, 1f); // Yellow tint
+    
     [Header("Debug")]
     public bool showDebugLogs = false;
     
     private Dictionary<string, int> seedInventory = new Dictionary<string, int>();
+    private int selectedSlotIndex = -1; // -1 means no selection
+    
+    void Awake()
+    {
+        // Singleton pattern
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+    }
     
     void Start()
     {
@@ -50,6 +72,9 @@ public class GardenHotbar : MonoBehaviour
         {
             InventorySystem.Instance.onInventoryChangedCallback += RefreshHotbar;
         }
+        
+        // Setup click handlers for slots
+        SetupSlotButtons();
         
         // Initial refresh
         RefreshHotbar();
@@ -113,8 +138,11 @@ public class GardenHotbar : MonoBehaviour
     /// </summary>
     bool IsSeedItem(string itemID)
     {
-        // Seeds are identified by having the seed suffix in their ID
-        return itemID.Contains(seedIDSuffix);
+        if (string.IsNullOrEmpty(itemID)) return false;
+        
+        // Seeds are identified by having "seed" in their ID (supports both "_seed" and "seed_" patterns)
+        // This handles variations like "ginger_seed", "seed_lagundi", "seed_garlic", etc.
+        return itemID.ToLower().Contains("seed");
     }
     
     /// <summary>
@@ -122,11 +150,18 @@ public class GardenHotbar : MonoBehaviour
     /// </summary>
     void UpdateHotbarSlots()
     {
+        // Store current selection before clearing
+        string previousSelectedID = GetSelectedSeedID();
+        int previousSelectedIndex = selectedSlotIndex;
+        
         // Clear all slots first
         foreach (var slot in hotbarSlots)
         {
             ClearSlot(slot);
         }
+        
+        // Clear selection
+        selectedSlotIndex = -1;
         
         // Fill slots with seeds
         int slotIndex = 0;
@@ -151,6 +186,13 @@ public class GardenHotbar : MonoBehaviour
             if (itemData != null)
             {
                 SetSlot(hotbarSlots[slotIndex], itemData, quantity);
+                
+                // Restore selection if this was the previously selected seed
+                if (seedID == previousSelectedID && quantity > 0)
+                {
+                    SelectSlot(slotIndex);
+                }
+                
                 slotIndex++;
             }
         }
@@ -159,6 +201,126 @@ public class GardenHotbar : MonoBehaviour
         {
             Debug.Log($"[GardenHotbar] Updated {slotIndex} slots with seeds");
         }
+    }
+    
+    /// <summary>
+    /// Setup button components and click handlers for all slots
+    /// </summary>
+    void SetupSlotButtons()
+    {
+        for (int i = 0; i < hotbarSlots.Length; i++)
+        {
+            int slotIndex = i; // Capture for closure
+            
+            if (hotbarSlots[i].slotObject == null) continue;
+            
+            // Get or add Button component
+            Button button = hotbarSlots[i].slotObject.GetComponent<Button>();
+            if (button == null)
+            {
+                button = hotbarSlots[i].slotObject.AddComponent<Button>();
+            }
+            
+            hotbarSlots[i].button = button;
+            
+            // Remove existing listeners and add new one
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() => OnSlotClicked(slotIndex));
+        }
+    }
+    
+    /// <summary>
+    /// Called when a slot is clicked
+    /// </summary>
+    void OnSlotClicked(int slotIndex)
+    {
+        if (slotIndex < 0 || slotIndex >= hotbarSlots.Length)
+        {
+            return;
+        }
+        
+        HotbarSlot slot = hotbarSlots[slotIndex];
+        
+        if (slot.isEmpty)
+        {
+            if (showDebugLogs) Debug.Log($"[GardenHotbar] Slot {slotIndex} is empty, cannot select");
+            return;
+        }
+        
+        // Toggle selection (clicking same slot deselects)
+        if (selectedSlotIndex == slotIndex)
+        {
+            ClearSelection();
+        }
+        else
+        {
+            SelectSlot(slotIndex);
+        }
+    }
+    
+    /// <summary>
+    /// Select a slot
+    /// </summary>
+    void SelectSlot(int slotIndex)
+    {
+        // Clear previous selection visual
+        if (selectedSlotIndex >= 0 && selectedSlotIndex < hotbarSlots.Length)
+        {
+            UpdateSlotVisual(selectedSlotIndex, false);
+        }
+        
+        // Set new selection
+        selectedSlotIndex = slotIndex;
+        UpdateSlotVisual(selectedSlotIndex, true);
+        
+        if (showDebugLogs)
+        {
+            string seedID = hotbarSlots[slotIndex].currentItemID;
+            Debug.Log($"[GardenHotbar] Selected slot {slotIndex} with seed: {seedID}");
+        }
+    }
+    
+    /// <summary>
+    /// Clear selection
+    /// </summary>
+    public void ClearSelection()
+    {
+        if (selectedSlotIndex >= 0 && selectedSlotIndex < hotbarSlots.Length)
+        {
+            UpdateSlotVisual(selectedSlotIndex, false);
+        }
+        
+        selectedSlotIndex = -1;
+        
+        if (showDebugLogs) Debug.Log("[GardenHotbar] Selection cleared");
+    }
+    
+    /// <summary>
+    /// Update visual state of a slot (selected or not)
+    /// </summary>
+    void UpdateSlotVisual(int slotIndex, bool isSelected)
+    {
+        if (slotIndex < 0 || slotIndex >= hotbarSlots.Length) return;
+        
+        HotbarSlot slot = hotbarSlots[slotIndex];
+        
+        if (slot.iconImage != null)
+        {
+            slot.iconImage.color = isSelected ? selectedColor : Color.white;
+        }
+    }
+    
+    /// <summary>
+    /// Get the currently selected seed ID
+    /// </summary>
+    public string GetSelectedSeedID()
+    {
+        if (selectedSlotIndex < 0 || selectedSlotIndex >= hotbarSlots.Length)
+        {
+            return null;
+        }
+        
+        return hotbarSlots[selectedSlotIndex].currentItemID;
     }
     
     /// <summary>
@@ -190,6 +352,13 @@ public class GardenHotbar : MonoBehaviour
         if (slot.slotObject != null)
         {
             slot.slotObject.SetActive(true);
+        }
+        
+        // Update visual if this slot is selected
+        int slotIndex = System.Array.IndexOf(hotbarSlots, slot);
+        if (slotIndex == selectedSlotIndex)
+        {
+            UpdateSlotVisual(slotIndex, true);
         }
     }
     

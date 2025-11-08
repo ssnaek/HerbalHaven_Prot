@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27de588f25755ad498fcac5632fa5830, type: 3}
   m_Name: GingerSeed
   m_EditorClassIdentifier: 
-  itemID: seed_ginger
+  itemID: ginger_seed
   itemName: Ginger root
   icon: {fileID: 21300000, guid: 65c71d849f8867f4cae2bae7f848be4a, type: 3}
   description: A fresh ginger root cutting

@@ -381,13 +381,13 @@ public class ShopSystem : MonoBehaviour
                     Sprite icon = plantData != null ? plantData.icon : item.icon;
 
                     InventorySystem.Instance.AddItem(
-                        item.plantID, 
+                        item.itemID,  // Use itemID instead of plantID so GardenHotbar can identify it as a seed
                         item.itemName, 
                         icon, 
                         item.seedQuantity
                     );
 
-                    if (showDebugLogs) Debug.Log($"[Shop] Added {item.seedQuantity}x {item.itemName} to inventory");
+                    if (showDebugLogs) Debug.Log($"[Shop] Added {item.seedQuantity}x {item.itemName} (ID: {item.itemID}) to inventory");
                 }
                 break;
         }
