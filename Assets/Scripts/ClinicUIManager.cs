@@ -53,11 +53,24 @@ public class ClinicPanelManager : MonoBehaviour
 
     /// <summary>
     /// Toggle between counter and crafting
+    /// Also handles returning from garden view to crafting (workstation)
     /// </summary>
     public void ToggleView()
     {
         if (isAnimating) return;
+        
+        // Check if garden UI is showing - if so, return to crafting (workstation)
+        GardenUIManager gardenManager = FindObjectOfType<GardenUIManager>();
+        if (gardenManager != null && gardenManager.IsShowingGarden())
+        {
+            // Show counter UI first (which enables all counter/crafting panels)
+            gardenManager.ShowCounterUI();
+            // Then show crafting view
+            ShowCrafting();
+            return;
+        }
 
+        // Normal counter/crafting toggle
         if (showingCrafting)
             ShowCounter();
         else
