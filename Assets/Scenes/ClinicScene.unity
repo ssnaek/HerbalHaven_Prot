@@ -24876,32 +24876,8 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 6407502496708357815, guid: 0fb221d6530b3c34fb3bfe22245ba802, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 4756122436973775781}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0fb221d6530b3c34fb3bfe22245ba802, type: 3}
---- !u!1 &4756122436973775780 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6407502496708357815, guid: 0fb221d6530b3c34fb3bfe22245ba802, type: 3}
-  m_PrefabInstance: {fileID: 4756122436973775779}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &4756122436973775781
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4756122436973775780}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ec0eb2f0fbc294b4f8b098ce52591425, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  emptyPotSprite: {fileID: 21300000, guid: 7233142da11b2c04e96b71a8c01d99bf, type: 3}
-  sproutPotSprite: {fileID: 21300000, guid: 47e8f9248bd3bf54ba2184f4eed9b84f, type: 3}
-  potImage: {fileID: 0}
-  showDebugLogs: 0
 --- !u!114 &5188609362177492940
 MonoBehaviour:
   m_ObjectHideFlags: 0

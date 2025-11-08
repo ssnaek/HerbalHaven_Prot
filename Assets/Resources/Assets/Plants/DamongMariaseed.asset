@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27de588f25755ad498fcac5632fa5830, type: 3}
   m_Name: DamongMariaseed
   m_EditorClassIdentifier: 
-  itemID: seed_maria
+  itemID: maria_seed
   itemName: Maria cuttling
   icon: {fileID: 0}
   description: A cuttling of damong maria

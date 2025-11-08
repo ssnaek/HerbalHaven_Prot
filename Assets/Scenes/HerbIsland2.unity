@@ -14574,6 +14574,10 @@ PrefabInstance:
       value: 0.45
       objectReference: {fileID: 0}
     - target: {fileID: 1218965353873791079, guid: 1c03109101cb7af4fa22845df0b0c27c, type: 3}
+      propertyPath: showDebugLogs
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1218965353873791079, guid: 1c03109101cb7af4fa22845df0b0c27c, type: 3}
       propertyPath: basePlantCount
       value: 3
       objectReference: {fileID: 0}
