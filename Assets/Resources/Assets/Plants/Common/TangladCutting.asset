@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27de588f25755ad498fcac5632fa5830, type: 3}
   m_Name: TangladCutting
   m_EditorClassIdentifier: 
-  itemID: tanglad_seed
+  itemID: seed_tanglad
   itemName: Tanglad stalk
   icon: {fileID: 0}
   description: Fresh tanglad stalks

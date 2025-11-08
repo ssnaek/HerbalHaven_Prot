@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27de588f25755ad498fcac5632fa5830, type: 3}
   m_Name: YerbaBuenaCutting
   m_EditorClassIdentifier: 
-  itemID: yerbabuena_seed
+  itemID: seed_yerbabuena
   itemName: Yerba cuttling
   icon: {fileID: 0}
   description: A cuttling of yerba buena
