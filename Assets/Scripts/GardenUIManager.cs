@@ -91,7 +91,7 @@ public class GardenUIManager : MonoBehaviour
         SetGameObjectActive(counterPanel, false);
         SetGameObjectActive(counterUIPanel, false);
         SetGameObjectActive(craftingUIPanel, false);
-        // Keep toggle button visible so user can return to counter/crafting
+        // Keep toggle button enabled so user can return to workstation
         // SetGameObjectActive(toggleButton, false);
         
         // Enable Garden UI
