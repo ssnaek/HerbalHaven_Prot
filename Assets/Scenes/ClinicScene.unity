@@ -10892,6 +10892,55 @@ Mesh:
     offset: 0
     size: 0
     path: 
+--- !u!1 &1224604441
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1224604443}
+  - component: {fileID: 1224604442}
+  m_Layer: 0
+  m_Name: ClinicPhaseManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1224604442
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1224604441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e77a6392867dec241aa28250117375ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  medicinesRequired: 1
+  nextSceneName: Home_Island
+  transitionDelay: 2
+  craftingManager: {fileID: 0}
+  showDebugLogs: 0
+--- !u!4 &1224604443
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1224604441}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.2624204, y: 1.5266081, z: -9.377594}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1241059760
 GameObject:
   m_ObjectHideFlags: 0
@@ -26391,3 +26440,4 @@ SceneRoots:
   - {fileID: 155760996}
   - {fileID: 129630950}
   - {fileID: 141294075}
+  - {fileID: 1224604443}
