@@ -30,6 +30,9 @@ public class MedicineCraftingManager : MonoBehaviour
     [Tooltip("Points awarded for each correct herb use match")]
     public int pointsPerMatch = 10;
     
+    [Tooltip("Conversion rate: how many coins per point (1 = 1:1 conversion)")]
+    public int coinsPerPoint = 1;
+    
     [Header("Audio")]
     public SFXLibrary sfxLibrary;
     
@@ -215,6 +218,14 @@ public class MedicineCraftingManager : MonoBehaviour
         int craftScore = CalculateScore(combinedProperties);
         currentScore += craftScore;
         
+        // Convert points to coins and add to player's currency
+        int coinsEarned = craftScore * coinsPerPoint;
+        if (coinsEarned > 0 && InventorySystem.Instance != null)
+        {
+            InventorySystem.Instance.AddCurrency(coinsEarned);
+            if (showDebugLogs) Debug.Log($"[Crafting] Converted {craftScore} points to {coinsEarned} coins");
+        }
+        
         // Log crafting results
         Debug.Log("=== MEDICINE CRAFTED ===");
         Debug.Log($"[Crafting] Crafted medicine with {combinedProperties.Count} properties:");
@@ -223,6 +234,7 @@ public class MedicineCraftingManager : MonoBehaviour
             Debug.Log($"  - {prop}");
         }
         Debug.Log($"[Crafting] Score for this craft: {craftScore} points");
+        Debug.Log($"[Crafting] Coins earned: {coinsEarned} coins");
         Debug.Log($"[Crafting] Total Score: {currentScore} points");
         Debug.Log("========================");
         

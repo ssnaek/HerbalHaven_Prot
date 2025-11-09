@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using System;
 
 /// <summary>
@@ -70,9 +71,17 @@ public class PotManager : MonoBehaviour
     private string plantedSeedID = null;
     private int dayPlanted = -1; // Track which day the seed was planted
     private bool isFullyGrown = false;
+    private string potID; // Unique identifier for this pot
+    private bool stateNeedsSaving = false;
     
     void Awake()
     {
+        // Initialize unique pot ID
+        InitializePotID();
+        
+        // Load saved state
+        LoadPotState();
+        
         // Auto-find Image component if not assigned
         if (potImage == null)
         {
@@ -89,14 +98,11 @@ public class PotManager : MonoBehaviour
         // Add click listener
         button.onClick.AddListener(OnPotClicked);
         
-        // Initialize with empty pot sprite
-        if (potImage != null && emptyPotSprite != null)
-        {
-            potImage.sprite = emptyPotSprite;
-        }
-        
         // Setup plant overlay if enabled
         SetupPlantOverlay();
+        
+        // Subscribe to scene unload to save state
+        SceneManager.sceneUnloaded += OnSceneUnloaded;
     }
     
     /// <summary>
@@ -155,6 +161,44 @@ public class PotManager : MonoBehaviour
         if (TimeSystem.Instance != null)
         {
             TimeSystem.Instance.onNewDayCallback += OnNewDay;
+        }
+        
+        // After loading, check if plant should be grown
+        CheckPlantGrowth();
+    }
+    
+    void OnDestroy()
+    {
+        // Save before destruction
+        if (stateNeedsSaving)
+        {
+            SavePotState();
+            if (showDebugLogs)
+                Debug.Log($"[PotManager] Saved pot state on destroy: {gameObject.name}");
+        }
+        
+        SceneManager.sceneUnloaded -= OnSceneUnloaded;
+    }
+    
+    void OnApplicationQuit()
+    {
+        // Save when application quits
+        if (stateNeedsSaving)
+        {
+            SavePotState();
+            if (showDebugLogs)
+                Debug.Log($"[PotManager] Saved pot state on application quit: {gameObject.name}");
+        }
+    }
+    
+    void OnSceneUnloaded(Scene scene)
+    {
+        // Save when scene unloads (more reliable than OnDestroy)
+        if (stateNeedsSaving)
+        {
+            SavePotState();
+            if (showDebugLogs)
+                Debug.Log($"[PotManager] Saved pot state on scene unload: {scene.name} - {gameObject.name}");
         }
     }
     
@@ -286,6 +330,10 @@ public class PotManager : MonoBehaviour
             Debug.Log($"[PotManager] Planted {seedName} in pot '{gameObject.name}'");
         }
         
+        // Mark state as needing saving and save immediately
+        stateNeedsSaving = true;
+        SavePotState();
+        
         return true;
     }
     
@@ -315,8 +363,8 @@ public class PotManager : MonoBehaviour
             return;
         }
         
-        // Determine which image to use for the grown plant
-        Image targetImage = (plantOverlayImage != null && allowPlantOverflow) ? plantOverlayImage : potImage;
+        // Always use overlay for fully grown plants if it exists, otherwise fall back to pot image
+        Image targetImage = (plantOverlayImage != null) ? plantOverlayImage : potImage;
         
         // Change sprite to fully grown plant
         if (targetImage != null)
@@ -326,11 +374,26 @@ public class PotManager : MonoBehaviour
             targetImage.preserveAspect = true; // Preserve aspect ratio for tall plants
             isFullyGrown = true;
             
-            // If using overlay, keep the pot sprite visible underneath
-            if (targetImage == plantOverlayImage && potImage != null)
+            // If using overlay, ensure it's properly set up and enabled
+            if (targetImage == plantOverlayImage)
             {
-                // Optionally keep showing the pot underneath, or hide it
-                // For now, keep it visible so you can see both pot and plant
+                // Enable the overlay GameObject
+                plantOverlayImage.gameObject.SetActive(true);
+                
+                // Ensure overlay is set up for overflow (even if allowPlantOverflow was false)
+                LayoutElement layoutElement = plantOverlayImage.GetComponent<LayoutElement>();
+                if (layoutElement == null)
+                {
+                    layoutElement = plantOverlayImage.gameObject.AddComponent<LayoutElement>();
+                }
+                layoutElement.ignoreLayout = true;
+                
+                // Apply offset
+                RectTransform rectTransform = plantOverlayImage.GetComponent<RectTransform>();
+                if (rectTransform != null)
+                {
+                    rectTransform.anchoredPosition = plantOverlayOffset;
+                }
             }
             
             if (showDebugLogs)
@@ -338,6 +401,10 @@ public class PotManager : MonoBehaviour
                 string imageType = (targetImage == plantOverlayImage) ? "overlay" : "pot";
                 Debug.Log($"[PotManager] 🌱 Plant grew! Pot '{gameObject.name}' now showing fully grown '{plantedSeedID}' sprite on {imageType} image");
             }
+            
+            // Mark state as needing saving and save immediately
+            stateNeedsSaving = true;
+            SavePotState();
         }
     }
     
@@ -399,6 +466,10 @@ public class PotManager : MonoBehaviour
         
         // Reset the pot to empty state
         ResetPot();
+        
+        // Mark state as needing saving and save immediately
+        stateNeedsSaving = true;
+        SavePotState();
     }
     
     /// <summary>
@@ -479,5 +550,168 @@ public class PotManager : MonoBehaviour
     {
         return dayPlanted;
     }
+    
+    #region Save/Load System
+    
+    /// <summary>
+    /// Initialize unique pot ID based on scene and GameObject name/position
+    /// </summary>
+    void InitializePotID()
+    {
+        Scene currentScene = SceneManager.GetActiveScene();
+        RectTransform rectTransform = GetComponent<RectTransform>();
+        
+        // Use scene name + GameObject name + position for unique ID
+        // For UI elements, position might be more reliable than transform.position
+        if (rectTransform != null)
+        {
+            Vector2 anchoredPos = rectTransform.anchoredPosition;
+            potID = $"{currentScene.name}_{gameObject.name}_{anchoredPos.x:F1}_{anchoredPos.y:F1}";
+        }
+        else
+        {
+            Vector3 pos = transform.position;
+            potID = $"{currentScene.name}_{gameObject.name}_{pos.x:F1}_{pos.y:F1}_{pos.z:F1}";
+        }
+        
+        if (showDebugLogs)
+            Debug.Log($"[PotManager] Pot ID: {potID}");
+    }
+    
+    /// <summary>
+    /// Save pot state to PlayerPrefs
+    /// </summary>
+    void SavePotState()
+    {
+        if (string.IsNullOrEmpty(potID))
+        {
+            Debug.LogWarning($"[PotManager] Cannot save - pot ID not initialized for '{gameObject.name}'");
+            return;
+        }
+        
+        // Save individual values
+        PlayerPrefs.SetInt(GetIsPlantedKey(), isPlanted ? 1 : 0);
+        PlayerPrefs.SetString(GetSeedIDKey(), plantedSeedID ?? "");
+        PlayerPrefs.SetInt(GetDayPlantedKey(), dayPlanted);
+        PlayerPrefs.SetInt(GetIsFullyGrownKey(), isFullyGrown ? 1 : 0);
+        PlayerPrefs.Save();
+        
+        stateNeedsSaving = false;
+        
+        if (showDebugLogs)
+            Debug.Log($"[PotManager] Saved state for pot '{gameObject.name}': Planted={isPlanted}, Seed={plantedSeedID}, Day={dayPlanted}, Grown={isFullyGrown}");
+    }
+    
+    /// <summary>
+    /// Load pot state from PlayerPrefs
+    /// </summary>
+    void LoadPotState()
+    {
+        if (string.IsNullOrEmpty(potID))
+        {
+            if (showDebugLogs)
+                Debug.LogWarning($"[PotManager] Cannot load - pot ID not initialized for '{gameObject.name}'");
+            return;
+        }
+        
+        // Load individual values
+        isPlanted = PlayerPrefs.GetInt(GetIsPlantedKey(), 0) == 1;
+        plantedSeedID = PlayerPrefs.GetString(GetSeedIDKey(), "");
+        if (string.IsNullOrEmpty(plantedSeedID))
+            plantedSeedID = null;
+        dayPlanted = PlayerPrefs.GetInt(GetDayPlantedKey(), -1);
+        isFullyGrown = PlayerPrefs.GetInt(GetIsFullyGrownKey(), 0) == 1;
+        
+        // Restore visual state
+        if (isPlanted)
+        {
+            if (isFullyGrown)
+            {
+                // Plant is fully grown - restore grown sprite, always using overlay if available
+                Sprite grownSprite = GetGrownPlantSprite(plantedSeedID);
+                if (grownSprite != null)
+                {
+                    // Always use overlay for fully grown plants if it exists
+                    Image targetImage = (plantOverlayImage != null) ? plantOverlayImage : potImage;
+                    
+                    if (targetImage != null)
+                    {
+                        targetImage.sprite = grownSprite;
+                        targetImage.enabled = true;
+                        targetImage.preserveAspect = true;
+                        
+                        // If using overlay, ensure it's properly set up and enabled
+                        if (targetImage == plantOverlayImage)
+                        {
+                            // Enable the overlay GameObject
+                            plantOverlayImage.gameObject.SetActive(true);
+                            
+                            // Ensure overlay is set up for overflow (even if allowPlantOverflow was false)
+                            LayoutElement layoutElement = plantOverlayImage.GetComponent<LayoutElement>();
+                            if (layoutElement == null)
+                            {
+                                layoutElement = plantOverlayImage.gameObject.AddComponent<LayoutElement>();
+                            }
+                            layoutElement.ignoreLayout = true;
+                            
+                            // Apply offset
+                            RectTransform rectTransform = plantOverlayImage.GetComponent<RectTransform>();
+                            if (rectTransform != null)
+                            {
+                                rectTransform.anchoredPosition = plantOverlayOffset;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Plant is still growing - show sprout sprite
+                if (potImage != null && sproutPotSprite != null)
+                {
+                    potImage.sprite = sproutPotSprite;
+                }
+            }
+        }
+        else
+        {
+            // Pot is empty - show empty sprite
+            if (potImage != null && emptyPotSprite != null)
+            {
+                potImage.sprite = emptyPotSprite;
+            }
+        }
+        
+        if (showDebugLogs)
+            Debug.Log($"[PotManager] Loaded state for pot '{gameObject.name}': Planted={isPlanted}, Seed={plantedSeedID}, Day={dayPlanted}, Grown={isFullyGrown}");
+    }
+    
+    /// <summary>
+    /// Check if plant should be grown based on current day vs day planted
+    /// </summary>
+    void CheckPlantGrowth()
+    {
+        if (!isPlanted || isFullyGrown || dayPlanted <= 0)
+            return;
+        
+        if (TimeSystem.Instance != null)
+        {
+            int currentDay = TimeSystem.Instance.GetCurrentDay();
+            if (currentDay > dayPlanted)
+            {
+                // Plant should have grown
+                if (showDebugLogs)
+                    Debug.Log($"[PotManager] Plant in pot '{gameObject.name}' should be grown (planted day {dayPlanted}, current day {currentDay})");
+                GrowPlant();
+            }
+        }
+    }
+    
+    string GetIsPlantedKey() => $"Pot_{potID}_IsPlanted";
+    string GetSeedIDKey() => $"Pot_{potID}_SeedID";
+    string GetDayPlantedKey() => $"Pot_{potID}_DayPlanted";
+    string GetIsFullyGrownKey() => $"Pot_{potID}_IsFullyGrown";
+    
+    #endregion
 }
 

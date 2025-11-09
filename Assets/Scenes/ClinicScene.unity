@@ -1482,7 +1482,7 @@ MonoBehaviour:
   - {fileID: 2031065335}
   - {fileID: 2011275866}
   sfxLibrary: {fileID: 0}
-  showDebugLogs: 0
+  showDebugLogs: 1
 --- !u!43 &136085293
 Mesh:
   m_ObjectHideFlags: 0
