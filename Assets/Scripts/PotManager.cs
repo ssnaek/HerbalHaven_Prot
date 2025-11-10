@@ -139,6 +139,16 @@ public class PotManager : MonoBehaviour
     
     void OnEnable()
     {
+        // Check for reset flag again (in case it was set after Awake)
+        int resetFlag = PlayerPrefs.GetInt("ResetAllPots", 0);
+        if (resetFlag == 1)
+        {
+            Debug.Log($"[PotManager] *** OnEnable: Reset flag detected for {gameObject.name} - RESETTING! ***");
+            ResetPot();
+            stateNeedsSaving = true;
+            SavePotState();
+        }
+        
         // Subscribe to TimeSystem's new day event
         if (TimeSystem.Instance != null)
         {
@@ -157,6 +167,16 @@ public class PotManager : MonoBehaviour
     
     void Start()
     {
+        // FINAL SAFETY CHECK: Check for reset flag one more time
+        int resetFlag = PlayerPrefs.GetInt("ResetAllPots", 0);
+        if (resetFlag == 1 && isPlanted)
+        {
+            Debug.Log($"[PotManager] *** Start: Reset flag still active and pot is planted - FORCING RESET for {gameObject.name}! ***");
+            ResetPot();
+            stateNeedsSaving = true;
+            SavePotState();
+        }
+        
         // If TimeSystem already exists, subscribe to it
         if (TimeSystem.Instance != null)
         {
@@ -615,6 +635,21 @@ public class PotManager : MonoBehaviour
     /// </summary>
     void LoadPotState()
     {
+        // Check for global reset flag (set when starting a new game)
+        int resetFlag = PlayerPrefs.GetInt("ResetAllPots", 0);
+        if (showDebugLogs)
+            Debug.Log($"[PotManager] LoadPotState for {gameObject.name}: ResetAllPots flag = {resetFlag}");
+        
+        if (resetFlag == 1)
+        {
+            ResetPot();
+            stateNeedsSaving = true;
+            SavePotState(); // Save the reset state immediately
+            if (showDebugLogs)
+                Debug.Log($"[PotManager] *** RESET POT due to new game flag: {gameObject.name} ***");
+            return; // Skip normal loading
+        }
+        
         if (string.IsNullOrEmpty(potID))
         {
             if (showDebugLogs)

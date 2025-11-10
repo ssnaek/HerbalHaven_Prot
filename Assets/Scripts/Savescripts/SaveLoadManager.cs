@@ -33,11 +33,50 @@ public class SaveLoadManager : MonoBehaviour
             Instance = this;
             DontDestroyOnLoad(gameObject);
             InitializeSaveSystem();
+            
+            // Subscribe to scene loaded events to clear pot reset flag
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
         else
         {
             Destroy(gameObject);
         }
+    }
+
+    void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // Clear the pot reset flag after any scene loads (gives all pots time to read it)
+        if (PlayerPrefs.GetInt("ResetAllPots", 0) == 1)
+        {
+            StartCoroutine(ClearPotResetFlagDelayed());
+        }
+        
+        // Re-apply day number if loading from a save (fixes race condition)
+        if (currentSave != null && TimeSystem.Instance != null)
+        {
+            // Force the correct day again after scene loads
+            TimeSystem.Instance.ForceSetDay(currentSave.dayNumber);
+            if (showDebugLogs) Debug.Log($"[SaveLoad] Re-forced day to {currentSave.dayNumber} after scene load");
+        }
+    }
+
+    System.Collections.IEnumerator ClearPotResetFlagDelayed()
+    {
+        // Wait for end of frame to ensure all pots have loaded and read the flag
+        yield return new WaitForEndOfFrame();
+        
+        PlayerPrefs.DeleteKey("ResetAllPots");
+        PlayerPrefs.Save();
+        
+        if (showDebugLogs) Debug.Log("[SaveLoad] Cleared pot reset flag after scene load");
     }
 
     void InitializeSaveSystem()
@@ -67,8 +106,19 @@ public class SaveLoadManager : MonoBehaviour
             saveName = "New Save";
         }
 
-        // Clear old session data before creating new save
+        Debug.Log("[SaveLoad] ===== CREATING NEW GAME =====");
+
+        // CRITICAL: Clear old session data before creating new save
         ClearGameStatePlayerPrefs();
+        
+        // CRITICAL: Clear the InventorySystem completely
+        if (InventorySystem.Instance != null)
+        {
+            Debug.Log("[SaveLoad] Clearing InventorySystem for new game...");
+            InventorySystem.Instance.ClearInventory();
+            InventorySystem.Instance.SetCurrency(InventorySystem.Instance.startingCurrency);
+            Debug.Log("[SaveLoad] ✓ InventorySystem cleared and reset to starting currency");
+        }
         
         // Force reset TimeSystem if it exists (from previous session)
         if (TimeSystem.Instance != null)
@@ -100,9 +150,10 @@ public class SaveLoadManager : MonoBehaviour
         // Save immediately
         SaveCurrentGame();
 
-        if (showDebugLogs) Debug.Log($"[SaveLoad] Created new save: {saveName} (ID: {saveID})");
+        Debug.Log($"[SaveLoad] ✓ Created new save: {saveName} (ID: {saveID})");
+        Debug.Log("[SaveLoad] ===== NEW GAME CREATED =====");
 
-        // Load game state into systems
+        // Load game state into systems (should have nothing to load since it's new)
         LoadGameStateIntoSystems();
 
         // Load Home Island scene
@@ -139,6 +190,9 @@ public class SaveLoadManager : MonoBehaviour
             Debug.LogError("[SaveLoad] No active save to save!");
             return;
         }
+
+        // DEBUG: Log where this is being called from
+        Debug.Log($"[SaveLoad] === SAVING GAME === Called from:\n{System.Environment.StackTrace}");
 
         // Capture current game state
         CaptureCurrentGameState();
@@ -250,13 +304,29 @@ public class SaveLoadManager : MonoBehaviour
     {
         if (currentSave == null) return;
 
-        // Set day and time
+        if (showDebugLogs) Debug.Log($"[SaveLoad] Loading game state: Day {currentSave.dayNumber}, ${currentSave.playerCurrency}");
+
+        // Set day and time - FORCE SET to avoid race conditions
         if (TimeSystem.Instance != null)
         {
-            // TimeSystem will read from PlayerPrefs on Start, so set them now
+            // Use ForceSetDay to directly set the day (bypasses PlayerPrefs read race condition)
+            TimeSystem.Instance.ForceSetDay(currentSave.dayNumber);
+            
+            // Also set PlayerPrefs for backup
             PlayerPrefs.SetInt("CurrentDay", currentSave.dayNumber);
             PlayerPrefs.SetInt("PreviousDayHarvests", currentSave.previousDayHarvests);
             PlayerPrefs.Save();
+            
+            if (showDebugLogs) Debug.Log($"[SaveLoad] TimeSystem forced to Day {currentSave.dayNumber}");
+        }
+        else
+        {
+            // TimeSystem doesn't exist yet - set PlayerPrefs so it loads correctly
+            PlayerPrefs.SetInt("CurrentDay", currentSave.dayNumber);
+            PlayerPrefs.SetInt("PreviousDayHarvests", currentSave.previousDayHarvests);
+            PlayerPrefs.Save();
+            
+            if (showDebugLogs) Debug.Log($"[SaveLoad] TimeSystem not found - set PlayerPrefs for Day {currentSave.dayNumber}");
         }
 
         // Set currency
@@ -295,13 +365,39 @@ public class SaveLoadManager : MonoBehaviour
     /// </summary>
     PlantDataSO FindPlantDataByID(string plantID)
     {
-        if (string.IsNullOrEmpty(plantID)) return null;
+        if (string.IsNullOrEmpty(plantID))
+        {
+            if (showDebugLogs) Debug.Log("[SaveLoad] FindPlantDataByID: plantID is empty");
+            return null;
+        }
 
-        // This requires Resources folder or an asset database
-        // For now, we'll rely on PlantNodes having the data
-        // You may want to create a PlantDatabase ScriptableObject that holds all PlantDataSO references
+        if (showDebugLogs) Debug.Log($"[SaveLoad] Searching for PlantDataSO with ID: {plantID}");
+
+        // Method 1: Load from Resources/Assets/Plants/ folder
+        PlantDataSO[] allPlants = Resources.LoadAll<PlantDataSO>("Assets/Plants");
+        if (showDebugLogs) Debug.Log($"[SaveLoad] Found {allPlants.Length} PlantDataSO assets in Resources/Assets/Plants");
         
-        // Fallback: Try to find in loaded scenes (from PlantNodes)
+        foreach (var plant in allPlants)
+        {
+            if (plant != null && plant.plantID == plantID)
+            {
+                if (showDebugLogs) Debug.Log($"[SaveLoad] ✓ Found PlantDataSO: {plant.plantName} (ID: {plant.plantID})");
+                return plant;
+            }
+        }
+        
+        // Method 2: Try root Assets folder
+        allPlants = Resources.LoadAll<PlantDataSO>("Assets");
+        foreach (var plant in allPlants)
+        {
+            if (plant != null && plant.plantID == plantID)
+            {
+                if (showDebugLogs) Debug.Log($"[SaveLoad] ✓ Found PlantDataSO in root Assets: {plant.plantName}");
+                return plant;
+            }
+        }
+
+        // Method 3: Fallback - Try to find in loaded scenes (from PlantNodes)
         PlantNode[] nodes = FindObjectsOfType<PlantNode>();
         foreach (var node in nodes)
         {
@@ -309,11 +405,13 @@ public class SaveLoadManager : MonoBehaviour
             {
                 if (plant != null && plant.plantID == plantID)
                 {
+                    if (showDebugLogs) Debug.Log($"[SaveLoad] ✓ Found PlantDataSO from PlantNode: {plant.plantName}");
                     return plant;
                 }
             }
         }
 
+        Debug.LogError($"[SaveLoad] ✗ Could not find PlantDataSO with ID '{plantID}'! Searched {allPlants.Length} plant assets.");
         return null;
     }
 
@@ -350,26 +448,30 @@ public class SaveLoadManager : MonoBehaviour
     /// </summary>
     void ClearAllPotPlayerPrefs()
     {
-        // Find all PotManager instances (if in a scene)
-        PotManager[] pots = FindObjectsOfType<PotManager>();
+        Debug.Log("[SaveLoad] ===== CLEARING ALL POT PLAYERPREFS =====");
         
-        if (pots.Length > 0)
-        {
-            // Clear keys for pots that exist in the current scene
-            foreach (PotManager pot in pots)
-            {
-                string potID = pot.GetPotID();
-                if (!string.IsNullOrEmpty(potID))
-                {
-                    PlayerPrefs.DeleteKey($"Pot_{potID}_IsPlanted");
-                    PlayerPrefs.DeleteKey($"Pot_{potID}_SeedID");
-                    PlayerPrefs.DeleteKey($"Pot_{potID}_DayPlanted");
-                    PlayerPrefs.DeleteKey($"Pot_{potID}_IsFullyGrown");
-                }
-            }
-            
-            if (showDebugLogs) Debug.Log($"[SaveLoad] Cleared PlayerPrefs for {pots.Length} pots");
-        }
+        // NUCLEAR OPTION: Clear ALL PlayerPrefs (except we'll restore audio settings after)
+        // This ensures NO pot data survives
+        
+        // Save audio settings if they exist
+        float masterVolume = PlayerPrefs.GetFloat("MasterVolume", 1f);
+        float musicVolume = PlayerPrefs.GetFloat("MusicVolume", 1f);
+        float sfxVolume = PlayerPrefs.GetFloat("SFXVolume", 1f);
+        
+        // CLEAR EVERYTHING
+        PlayerPrefs.DeleteAll();
+        
+        // Restore audio settings
+        PlayerPrefs.SetFloat("MasterVolume", masterVolume);
+        PlayerPrefs.SetFloat("MusicVolume", musicVolume);
+        PlayerPrefs.SetFloat("SFXVolume", sfxVolume);
+        
+        // Set a flag that tells PotManager instances to reset themselves
+        PlayerPrefs.SetInt("ResetAllPots", 1);
+        PlayerPrefs.Save(); // CRITICAL: Save immediately!
+        
+        Debug.Log("[SaveLoad] ✓ DELETED ALL PLAYERPREFS and set ResetAllPots flag");
+        Debug.Log("[SaveLoad] ===== POT CLEARING COMPLETE =====");
     }
 
     // ==================== GET ALL SAVES ====================

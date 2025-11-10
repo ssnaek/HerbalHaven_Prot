@@ -168,15 +168,33 @@ public class CraftingSummaryManager : MonoBehaviour
             int currentDay = TimeSystem.Instance.GetCurrentDay();
             int nextDay = currentDay + 1;
             
-            // Save the next day
-            PlayerPrefs.SetInt("CurrentDay", nextDay);
-            PlayerPrefs.Save();
+            // Use ForceSetDay to update both TimeSystem and PlayerPrefs
+            TimeSystem.Instance.ForceSetDay(nextDay);
             
             if (showDebugLogs) Debug.Log($"[CraftingSummary] Day advanced: {currentDay} -> {nextDay}");
         }
         else
         {
             Debug.LogWarning("[CraftingSummary] TimeSystem.Instance not found! Day counter not advanced.");
+        }
+        
+        // Auto-save the game before returning to Home Island
+        if (SaveLoadManager.Instance != null && SaveLoadManager.Instance.HasActiveSave())
+        {
+            Debug.Log("[CraftingSummary] *** FINISH DAY BUTTON PRESSED - SAVING GAME NOW ***");
+            SaveLoadManager.Instance.SaveCurrentGame();
+            if (showDebugLogs) Debug.Log("[CraftingSummary] Game auto-saved!");
+        }
+        else
+        {
+            if (SaveLoadManager.Instance == null)
+            {
+                Debug.LogWarning("[CraftingSummary] SaveLoadManager.Instance not found! Game not saved.");
+            }
+            else
+            {
+                Debug.LogWarning("[CraftingSummary] No active save to save! Did you start from main menu?");
+            }
         }
         
         // Transition to Home Island

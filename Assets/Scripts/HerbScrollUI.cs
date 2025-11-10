@@ -10,6 +10,8 @@ using System.Collections.Generic;
 /// </summary>
 public class HerbScrollUI : MonoBehaviour
 {
+    public static HerbScrollUI Instance { get; private set; }
+    
     [Header("UI References")]
     [Tooltip("ScrollView content container where herb items spawn")]
     public Transform scrollContent;
@@ -26,12 +28,29 @@ public class HerbScrollUI : MonoBehaviour
     
     private List<GameObject> herbItems = new List<GameObject>();
     
+    void Awake()
+    {
+        // Singleton pattern to prevent multiple instances
+        if (Instance == null)
+        {
+            Instance = this;
+            if (showDebugLogs) Debug.Log("[HerbScroll] Instance created");
+        }
+        else
+        {
+            Debug.LogWarning("[HerbScroll] Duplicate HerbScrollUI detected! Destroying duplicate.");
+            Destroy(gameObject);
+            return;
+        }
+    }
+    
     void Start()
     {
         // Subscribe to inventory changes
         if (InventorySystem.Instance != null)
         {
             InventorySystem.Instance.onInventoryChangedCallback += RefreshHerbList;
+            if (showDebugLogs) Debug.Log("[HerbScroll] Subscribed to inventory changes");
         }
         
         // Initial populate
@@ -54,7 +73,7 @@ public class HerbScrollUI : MonoBehaviour
     {
         if (showDebugLogs) Debug.Log("[HerbScroll] Refreshing herb list");
         
-        // Clear existing items
+        // Clear existing items BEFORE creating new ones
         ClearHerbList();
         
         if (InventorySystem.Instance == null)
@@ -66,22 +85,42 @@ public class HerbScrollUI : MonoBehaviour
         // Get all items from inventory
         List<InventoryItemData> items = InventorySystem.Instance.GetAllItems();
         
-        // Create UI item for each herb
+        if (showDebugLogs) Debug.Log($"[HerbScroll] Found {items.Count} total items in inventory");
+        
+        int herbCount = 0;
+        
+        // Create UI item for each HERB (items with herbData - not seeds)
         foreach (var item in items)
         {
-            CreateHerbItem(item);
+            // FILTER: Only show items that have herbData (actual herbs, not seeds)
+            if (item.herbData != null)
+            {
+                CreateHerbItem(item);
+                herbCount++;
+            }
+            else
+            {
+                if (showDebugLogs) Debug.Log($"[HerbScroll] Skipping '{item.itemName}' - no herbData (probably a seed)");
+            }
         }
         
-        if (showDebugLogs) Debug.Log($"[HerbScroll] Created {herbItems.Count} herb items");
+        if (showDebugLogs) Debug.Log($"[HerbScroll] Created {herbCount} herb items (filtered from {items.Count} total items)");
     }
     
     void ClearHerbList()
     {
+        if (showDebugLogs) Debug.Log($"[HerbScroll] Clearing {herbItems.Count} existing items");
+        
         foreach (GameObject item in herbItems)
         {
-            Destroy(item);
+            if (item != null)
+            {
+                Destroy(item);
+            }
         }
         herbItems.Clear();
+        
+        if (showDebugLogs) Debug.Log("[HerbScroll] Clear complete");
     }
     
     void CreateHerbItem(InventoryItemData herbData)

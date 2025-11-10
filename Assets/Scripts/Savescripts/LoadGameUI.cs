@@ -25,34 +25,16 @@ public class LoadGameUI : MonoBehaviour
     {
         if (backButton != null)
             backButton.onClick.AddListener(OnBackClicked);
-
-        // Hide panel initially
-        if (loadGamePanel != null)
-            loadGamePanel.SetActive(false);
+        
+        if (showDebugLogs) Debug.Log("[LoadGameUI] LoadGameUI initialized");
     }
 
-    /// <summary>
-    /// Show Load Game panel and refresh save list.
-    /// </summary>
-    public void ShowLoadGamePanel()
+    void OnEnable()
     {
-        if (loadGamePanel != null)
-            loadGamePanel.SetActive(true);
-
+        // Refresh save list whenever this panel becomes active
         RefreshSaveList();
-
-        if (showDebugLogs) Debug.Log("[LoadGameUI] Load game panel shown");
-    }
-
-    /// <summary>
-    /// Hide Load Game panel.
-    /// </summary>
-    public void HideLoadGamePanel()
-    {
-        if (loadGamePanel != null)
-            loadGamePanel.SetActive(false);
-
-        if (showDebugLogs) Debug.Log("[LoadGameUI] Load game panel hidden");
+        
+        if (showDebugLogs) Debug.Log("[LoadGameUI] Panel enabled - refreshing save list");
     }
 
     /// <summary>
@@ -174,7 +156,7 @@ public class LoadGameUI : MonoBehaviour
         if (SaveLoadManager.Instance != null)
         {
             SaveLoadManager.Instance.LoadSave(saveID);
-            HideLoadGamePanel();
+            // Panel will be hidden when scene changes
         }
         else
         {
@@ -222,19 +204,7 @@ public class LoadGameUI : MonoBehaviour
         }
         else
         {
-            // Fallback: Direct hide if MenuPanelManager not found
-            HideLoadGamePanel();
-
-            // Return to main menu
-            MainMenuController controller = FindObjectOfType<MainMenuController>();
-            if (controller != null)
-            {
-                controller.BackToMainMenu();
-            }
-            else
-            {
-                Debug.LogWarning("[LoadGameUI] MenuPanelManager and MainMenuController not found!");
-            }
+            Debug.LogWarning("[LoadGameUI] MenuPanelManager not found! Cannot navigate back.");
         }
     }
 }
