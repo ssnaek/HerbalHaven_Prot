@@ -348,4 +348,18 @@ public class TimeSystem : MonoBehaviour
         if (showDebugLogs) Debug.Log("[TimeSystem] Force ending day...");
         EndDay();
     }
+    
+    /// <summary>
+    /// Force set the current day (used by SaveLoadManager when loading saves)
+    /// </summary>
+    public void ForceSetDay(int day)
+    {
+        currentDay = day;
+        PlayerPrefs.SetInt("CurrentDay", day);
+        PlayerPrefs.Save();
+        
+        UpdateDayDisplay();
+        
+        if (showDebugLogs) Debug.Log($"[TimeSystem] Day forcibly set to {day}");
+    }
 }

@@ -212,13 +212,29 @@ public class LoadGameUI : MonoBehaviour
 
     void OnBackClicked()
     {
-        HideLoadGamePanel();
+        if (showDebugLogs) Debug.Log("[LoadGameUI] Back button clicked");
 
-        // Return to main menu
-        MainMenuController controller = FindObjectOfType<MainMenuController>();
-        if (controller != null)
+        // Use MenuPanelManager to transition back to main menu
+        MenuPanelManager panelManager = FindObjectOfType<MenuPanelManager>();
+        if (panelManager != null)
         {
-            controller.BackToMainMenu();
+            panelManager.ShowMainMenu();
+        }
+        else
+        {
+            // Fallback: Direct hide if MenuPanelManager not found
+            HideLoadGamePanel();
+
+            // Return to main menu
+            MainMenuController controller = FindObjectOfType<MainMenuController>();
+            if (controller != null)
+            {
+                controller.BackToMainMenu();
+            }
+            else
+            {
+                Debug.LogWarning("[LoadGameUI] MenuPanelManager and MainMenuController not found!");
+            }
         }
     }
 }

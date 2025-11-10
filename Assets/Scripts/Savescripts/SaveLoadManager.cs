@@ -67,6 +67,16 @@ public class SaveLoadManager : MonoBehaviour
             saveName = "New Save";
         }
 
+        // Clear old session data before creating new save
+        ClearGameStatePlayerPrefs();
+        
+        // Force reset TimeSystem if it exists (from previous session)
+        if (TimeSystem.Instance != null)
+        {
+            TimeSystem.Instance.ForceSetDay(1);
+            if (showDebugLogs) Debug.Log("[SaveLoad] Reset TimeSystem to Day 1 for new game");
+        }
+
         // Generate unique save ID
         string saveID = GenerateUniqueSaveID();
         
@@ -305,6 +315,61 @@ public class SaveLoadManager : MonoBehaviour
         }
 
         return null;
+    }
+
+    // ==================== CLEAN UP PLAYERPREFS ====================
+
+    /// <summary>
+    /// Clear game-related PlayerPrefs to prevent conflicts between sessions.
+    /// Called when loading a save or creating new game to ensure clean state.
+    /// Note: Does NOT clear audio settings or other user preferences.
+    /// </summary>
+    void ClearGameStatePlayerPrefs()
+    {
+        if (showDebugLogs) Debug.Log("[SaveLoad] Clearing old game state from PlayerPrefs...");
+
+        // Clear TimeSystem data
+        PlayerPrefs.DeleteKey("CurrentDay");
+        PlayerPrefs.DeleteKey("PreviousDayHarvests");
+        
+        // Clear all pot-related keys
+        ClearAllPotPlayerPrefs();
+        
+        // Note: We intentionally DO NOT clear:
+        // - Audio settings (volume keys)
+        // - Other user preferences
+        
+        PlayerPrefs.Save();
+        
+        if (showDebugLogs) Debug.Log("[SaveLoad] Old game state cleared from PlayerPrefs");
+    }
+
+    /// <summary>
+    /// Clear all pot-related PlayerPrefs keys.
+    /// This removes state from previous sessions to prevent conflicts.
+    /// </summary>
+    void ClearAllPotPlayerPrefs()
+    {
+        // Find all PotManager instances (if in a scene)
+        PotManager[] pots = FindObjectsOfType<PotManager>();
+        
+        if (pots.Length > 0)
+        {
+            // Clear keys for pots that exist in the current scene
+            foreach (PotManager pot in pots)
+            {
+                string potID = pot.GetPotID();
+                if (!string.IsNullOrEmpty(potID))
+                {
+                    PlayerPrefs.DeleteKey($"Pot_{potID}_IsPlanted");
+                    PlayerPrefs.DeleteKey($"Pot_{potID}_SeedID");
+                    PlayerPrefs.DeleteKey($"Pot_{potID}_DayPlanted");
+                    PlayerPrefs.DeleteKey($"Pot_{potID}_IsFullyGrown");
+                }
+            }
+            
+            if (showDebugLogs) Debug.Log($"[SaveLoad] Cleared PlayerPrefs for {pots.Length} pots");
+        }
     }
 
     // ==================== GET ALL SAVES ====================

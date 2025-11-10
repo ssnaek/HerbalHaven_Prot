@@ -513,6 +513,14 @@ public class PotManager : MonoBehaviour
     }
     
     /// <summary>
+    /// Get the unique pot ID
+    /// </summary>
+    public string GetPotID()
+    {
+        return potID;
+    }
+    
+    /// <summary>
     /// Reset pot to empty state (for testing/debugging)
     /// </summary>
     public void ResetPot()
