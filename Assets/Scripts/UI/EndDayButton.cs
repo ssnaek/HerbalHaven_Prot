@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
+using TMPro;
 
 /// <summary>
 /// Button to instantly end the day and move to clinic scene.
@@ -12,6 +14,22 @@ public class EndDayButton : MonoBehaviour
     [Header("Button")]
     [Tooltip("Button component (auto-finds if empty)")]
     public Button endDayButton;
+    
+    [Header("Warning Panel")]
+    [Tooltip("Panel to show when player doesn't have enough herbs")]
+    public GameObject warningPanel;
+    
+    [Tooltip("Text component for the warning message")]
+    public TextMeshProUGUI warningText;
+    
+    [Tooltip("Warning message to display")]
+    public string warningMessage = "You need at least 3 plants foraged to end the day!";
+    
+    [Tooltip("Time to display each character (typewriter effect)")]
+    public float characterDelay = 0.05f;
+    
+    [Tooltip("Time to keep panel visible after text finishes")]
+    public float panelDisplayDuration = 5f;
 
     [Header("Settings")]
     [Tooltip("Show confirmation before ending day")]
@@ -28,6 +46,9 @@ public class EndDayButton : MonoBehaviour
 
     [Header("Debug")]
     public bool showDebugLogs = false;
+    
+    private bool isShowingWarning = false;
+    private Coroutine warningCoroutine;
 
     void Start()
     {
@@ -47,32 +68,113 @@ public class EndDayButton : MonoBehaviour
             Debug.LogError("[EndDayButton] No button component found!");
         }
         
-        // Check initial button state
-        UpdateButtonState();
-    }
-    
-    void Update()
-    {
-        // Continuously check if player has enough herbs to enable button
-        UpdateButtonState();
+        // Hide warning panel initially
+        if (warningPanel != null)
+        {
+            warningPanel.SetActive(false);
+        }
     }
     
     /// <summary>
-    /// Update button interactable state based on herb count
+    /// Update button interactable state based on whether warning is showing
     /// </summary>
-    void UpdateButtonState()
+    void Update()
     {
-        if (endDayButton == null) return;
-        
-        int herbCount = GetTotalHerbCount();
-        bool canEndDay = herbCount >= minimumHerbsRequired;
-        
-        endDayButton.interactable = canEndDay;
-        
-        if (showDebugLogs && endDayButton.interactable != canEndDay)
+        // Disable button while warning is showing to prevent spam
+        if (endDayButton != null)
         {
-            Debug.Log($"[EndDayButton] Button state: {(canEndDay ? "ENABLED" : "DISABLED")} (Herbs: {herbCount}/{minimumHerbsRequired})");
+            endDayButton.interactable = !isShowingWarning;
         }
+    }
+
+    /// <summary>
+    /// Called when button is clicked
+    /// </summary>
+    void OnEndDayButtonClicked()
+    {
+        if (showDebugLogs) Debug.Log("[EndDayButton] End Day button clicked");
+        
+        // Check if player has enough herbs
+        int herbCount = GetTotalHerbCount();
+        if (herbCount < minimumHerbsRequired)
+        {
+            Debug.Log($"[EndDayButton] Not enough herbs - showing warning (have {herbCount}, need {minimumHerbsRequired})");
+            ShowWarningPanel();
+            return;
+        }
+
+        PlaySound(sfxLibrary?.uiSelect);
+
+        if (requireConfirmation)
+        {
+            // Show confirmation (you can implement a popup if desired)
+            if (showDebugLogs) Debug.Log($"[EndDayButton] Confirmation: {confirmationMessage}");
+            
+            // For now, just end day directly
+            // TODO: Implement confirmation popup if needed
+            EndDayNow();
+        }
+        else
+        {
+            EndDayNow();
+        }
+    }
+    
+    /// <summary>
+    /// Show warning panel with typewriter effect
+    /// </summary>
+    void ShowWarningPanel()
+    {
+        if (warningPanel == null)
+        {
+            Debug.LogWarning("[EndDayButton] Warning panel not assigned!");
+            return;
+        }
+        
+        if (warningText == null)
+        {
+            Debug.LogWarning("[EndDayButton] Warning text not assigned!");
+            return;
+        }
+        
+        // Stop any existing warning coroutine
+        if (warningCoroutine != null)
+        {
+            StopCoroutine(warningCoroutine);
+        }
+        
+        // Start new warning coroutine
+        warningCoroutine = StartCoroutine(ShowWarningCoroutine());
+    }
+    
+    /// <summary>
+    /// Coroutine to display warning with typewriter effect
+    /// </summary>
+    IEnumerator ShowWarningCoroutine()
+    {
+        isShowingWarning = true;
+        
+        // Show panel
+        warningPanel.SetActive(true);
+        
+        // Clear text
+        warningText.text = "";
+        
+        // Typewriter effect
+        foreach (char c in warningMessage)
+        {
+            warningText.text += c;
+            yield return new WaitForSeconds(characterDelay);
+        }
+        
+        // Wait for display duration
+        yield return new WaitForSeconds(panelDisplayDuration);
+        
+        // Hide panel
+        warningPanel.SetActive(false);
+        
+        isShowingWarning = false;
+        warningCoroutine = null;
     }
     
     /// <summary>
@@ -98,38 +200,6 @@ public class EndDayButton : MonoBehaviour
         }
         
         return totalHerbs;
-    }
-
-    /// <summary>
-    /// Called when button is clicked
-    /// </summary>
-    void OnEndDayButtonClicked()
-    {
-        if (showDebugLogs) Debug.Log("[EndDayButton] End Day button clicked");
-        
-        // Double-check that player has enough herbs
-        int herbCount = GetTotalHerbCount();
-        if (herbCount < minimumHerbsRequired)
-        {
-            Debug.LogWarning($"[EndDayButton] Cannot end day - need {minimumHerbsRequired} herbs, only have {herbCount}");
-            return;
-        }
-
-        PlaySound(sfxLibrary?.uiSelect);
-
-        if (requireConfirmation)
-        {
-            // Show confirmation (you can implement a popup if desired)
-            if (showDebugLogs) Debug.Log($"[EndDayButton] Confirmation: {confirmationMessage}");
-            
-            // For now, just end day directly
-            // TODO: Implement confirmation popup if needed
-            EndDayNow();
-        }
-        else
-        {
-            EndDayNow();
-        }
     }
 
     /// <summary>

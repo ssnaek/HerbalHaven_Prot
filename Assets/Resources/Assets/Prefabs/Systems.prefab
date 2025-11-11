@@ -741,8 +741,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   journalPanel: {fileID: 5885027838749398083}
+  inventoryButton: {fileID: 0}
+  settingsButton: {fileID: 0}
+  leftInventoryContent: {fileID: 0}
+  leftSettingsContent: {fileID: 0}
+  rightInventoryContent: {fileID: 0}
+  rightSettingsContent: {fileID: 0}
   currencyText: {fileID: 7086478452144581472}
-  playerCurrency: 100
   plantPhoto: {fileID: 7841864331995042853}
   plantNameText: {fileID: 8343653402108138454}
   plantDescriptionText: {fileID: 7190232556429137473}
@@ -1279,7 +1284,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   transitionImage: {fileID: 8876174022340311459}
   transitionDuration: 0.5
-  circleMaterial: {fileID: 2100000, guid: 0f601521554ea0e4786db5dc67b3b7de, type: 2}
+  minRadius: -0.1
+  maxRadius: 1.1
   showDebugLogs: 0
   sfxLibrary: {fileID: 0}
 --- !u!1 &1333238245651932768
