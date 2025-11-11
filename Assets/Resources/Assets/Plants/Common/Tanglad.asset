@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   plantName: Tanglad
   plantID: tanglad
-  icon: {fileID: 21300000, guid: 97118a6aaa4228544847c9281e5c7a49, type: 3}
+  icon: {fileID: 21300000, guid: e8d47563c757e8a4794fa46c845ac404, type: 3}
   plantPrefab: {fileID: 3437813959191239917, guid: f895cfdeb3371294bb3620d93aba4319, type: 3}
   yieldPerPick: 1
   maxStack: 99

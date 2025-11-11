@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   plantName: Ginger
   plantID: ginger
-  icon: {fileID: 21300000, guid: a2b2728333fbc414a84cef7311506a7f, type: 3}
+  icon: {fileID: 21300000, guid: 02223bb63b264da44bcce1074ff64b5a, type: 3}
   plantPrefab: {fileID: 7379749658598820447, guid: bc44cbccca21e2542ab46b202d61c0ff, type: 3}
   yieldPerPick: 1
   maxStack: 99

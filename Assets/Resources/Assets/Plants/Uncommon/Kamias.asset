@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   plantName: Kamias
   plantID: kamias
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: aab115047f699ca428566e11c6d3b4c2, type: 3}
   plantPrefab: {fileID: 6350906414385177236, guid: 91d3481cdc419be4d93f12d1a7f5de76, type: 3}
   yieldPerPick: 1
   maxStack: 99

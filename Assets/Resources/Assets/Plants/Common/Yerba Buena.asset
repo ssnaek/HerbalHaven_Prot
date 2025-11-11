@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   plantName: Yerba Buena
   plantID: yerbabuena
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 6f88ebab53ceb8f43b0ef00d6779eaf1, type: 3}
   plantPrefab: {fileID: 2900984852640800655, guid: 0060b7a1749f58a4a84ad73aa9cf80cd, type: 3}
   yieldPerPick: 2
   maxStack: 99

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   plantName: Damong maria
   plantID: damongmaria
-  icon: {fileID: 21300000, guid: 788f43c1a92ca0642aed63892950f492, type: 3}
+  icon: {fileID: 21300000, guid: 3aaf11151e6b351498820db71e7bdb58, type: 3}
   plantPrefab: {fileID: 3742739994170342558, guid: 046a6ea91dee0dd41aa889728711cfef, type: 3}
   yieldPerPick: 1
   maxStack: 99

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   plantName: Bayabas
   plantID: bayabas
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 11dcac2b3a6ecd94398442be83159e73, type: 3}
   plantPrefab: {fileID: 5082809766258154376, guid: b72bf8b3c441ab943a80cdca20a06617, type: 3}
   yieldPerPick: 1
   maxStack: 99
