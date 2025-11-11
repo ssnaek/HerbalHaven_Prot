@@ -19,6 +19,9 @@ public class EndDayButton : MonoBehaviour
     
     [Tooltip("Confirmation message (if enabled)")]
     public string confirmationMessage = "End collecting and move to clinic?";
+    
+    [Tooltip("Minimum number of herbs required to end day")]
+    public int minimumHerbsRequired = 3;
 
     [Header("Audio")]
     public SFXLibrary sfxLibrary;
@@ -43,6 +46,58 @@ public class EndDayButton : MonoBehaviour
         {
             Debug.LogError("[EndDayButton] No button component found!");
         }
+        
+        // Check initial button state
+        UpdateButtonState();
+    }
+    
+    void Update()
+    {
+        // Continuously check if player has enough herbs to enable button
+        UpdateButtonState();
+    }
+    
+    /// <summary>
+    /// Update button interactable state based on herb count
+    /// </summary>
+    void UpdateButtonState()
+    {
+        if (endDayButton == null) return;
+        
+        int herbCount = GetTotalHerbCount();
+        bool canEndDay = herbCount >= minimumHerbsRequired;
+        
+        endDayButton.interactable = canEndDay;
+        
+        if (showDebugLogs && endDayButton.interactable != canEndDay)
+        {
+            Debug.Log($"[EndDayButton] Button state: {(canEndDay ? "ENABLED" : "DISABLED")} (Herbs: {herbCount}/{minimumHerbsRequired})");
+        }
+    }
+    
+    /// <summary>
+    /// Count total herbs (not seeds) in inventory
+    /// </summary>
+    int GetTotalHerbCount()
+    {
+        if (InventorySystem.Instance == null)
+        {
+            return 0;
+        }
+        
+        int totalHerbs = 0;
+        var items = InventorySystem.Instance.GetAllItems();
+        
+        foreach (var item in items)
+        {
+            // Only count items that have herbData (herbs, not seeds)
+            if (item.herbData != null)
+            {
+                totalHerbs += item.quantity;
+            }
+        }
+        
+        return totalHerbs;
     }
 
     /// <summary>
@@ -51,6 +106,14 @@ public class EndDayButton : MonoBehaviour
     void OnEndDayButtonClicked()
     {
         if (showDebugLogs) Debug.Log("[EndDayButton] End Day button clicked");
+        
+        // Double-check that player has enough herbs
+        int herbCount = GetTotalHerbCount();
+        if (herbCount < minimumHerbsRequired)
+        {
+            Debug.LogWarning($"[EndDayButton] Cannot end day - need {minimumHerbsRequired} herbs, only have {herbCount}");
+            return;
+        }
 
         PlaySound(sfxLibrary?.uiSelect);
 
