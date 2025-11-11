@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: ginger_seed
   itemName: Ginger root
-  icon: {fileID: 21300000, guid: 65c71d849f8867f4cae2bae7f848be4a, type: 3}
+  icon: {fileID: 21300000, guid: b459be8db9c57ec4f8b17e27fcc07bfb, type: 3}
   description: A fresh ginger root cutting
   price: 30
   itemType: 0

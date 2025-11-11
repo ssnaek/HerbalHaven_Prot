@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: garlic_seed
   itemName: Garlic clove
-  icon: {fileID: 21300000, guid: 65c71d849f8867f4cae2bae7f848be4a, type: 3}
+  icon: {fileID: 21300000, guid: d40cc8fe62b9e854d9a186e0b3e94ef0, type: 3}
   description: One clove of garlic
   price: 20
   itemType: 0

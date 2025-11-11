@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: lagundi_seed
   itemName: Lagundi seeds
-  icon: {fileID: 21300000, guid: 65c71d849f8867f4cae2bae7f848be4a, type: 3}
+  icon: {fileID: 21300000, guid: b0fb45ba22a840b4397432c6ec2ebaa6, type: 3}
   description: A bag of lagundi seeds
   price: 30
   itemType: 0

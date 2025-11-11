@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: oregano_seed
   itemName: Oregano cuttling
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 5ac6cdde63deb9b4790ac747424291e9, type: 3}
   description: A fresh cuttling of oregano
   price: 50
   itemType: 0

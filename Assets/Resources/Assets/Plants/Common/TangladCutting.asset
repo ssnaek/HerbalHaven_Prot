@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: tanglad_seed
   itemName: Tanglad stalk
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 655e17931eae3ff42b47fe8bef312d22, type: 3}
   description: Fresh tanglad stalks
   price: 30
   itemType: 0

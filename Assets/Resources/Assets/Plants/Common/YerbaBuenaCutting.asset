@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemID: yerbabuena_seed
   itemName: Yerba cuttling
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 7ba79ddcf197da44caf22f75549a93be, type: 3}
   description: A cuttling of yerba buena
   price: 30
   itemType: 0
