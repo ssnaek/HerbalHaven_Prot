@@ -65,8 +65,15 @@ public class MedicineCraftingManager : MonoBehaviour
     // Track herbs that were removed from inventory (for restoration on reset)
     private List<PlantDataSO> removedHerbs = new List<PlantDataSO>();
     
+    // Track if medicine was crafted today (one craft per day limit)
+    private bool hasCraftedToday = false;
+    private int lastCraftedDay = -1;
+    
     void Start()
     {
+        // Check current day
+        CheckCraftingAvailability();
+        
         // Wire up buttons
         if (craftButton != null)
             craftButton.onClick.AddListener(CraftMedicine);
@@ -78,6 +85,34 @@ public class MedicineCraftingManager : MonoBehaviour
         ResetSlots();
         
         UpdateCraftButton();
+    }
+    
+    /// <summary>
+    /// Check if player can craft today
+    /// </summary>
+    void CheckCraftingAvailability()
+    {
+        if (TimeSystem.Instance != null)
+        {
+            int currentDay = TimeSystem.Instance.GetCurrentDay();
+            
+            // If it's a new day, reset the crafting flag
+            if (currentDay != lastCraftedDay)
+            {
+                hasCraftedToday = false;
+                if (showDebugLogs) Debug.Log($"[Crafting] New day detected (Day {currentDay}) - crafting available");
+            }
+            else if (hasCraftedToday)
+            {
+                if (showDebugLogs) Debug.Log($"[Crafting] Already crafted today (Day {currentDay})");
+            }
+        }
+    }
+    
+    void OnEnable()
+    {
+        // Recheck crafting availability when scene/panel is enabled
+        CheckCraftingAvailability();
     }
     
     /// <summary>
@@ -188,12 +223,28 @@ public class MedicineCraftingManager : MonoBehaviour
     /// </summary>
     void CraftMedicine()
     {
+        // Check if already crafted today
+        if (hasCraftedToday)
+        {
+            Debug.Log("[Crafting] ⚠️ Already crafted medicine today! Come back tomorrow.");
+            PlaySound(sfxLibrary?.errorSound);
+            return;
+        }
+        
         // Must have at least 1 herb
         if (currentSlotIndex == 0)
         {
             if (showDebugLogs) Debug.Log("[Crafting] No herbs selected!");
             PlaySound(sfxLibrary?.errorSound);
             return;
+        }
+        
+        // Mark that crafting was done today
+        hasCraftedToday = true;
+        if (TimeSystem.Instance != null)
+        {
+            lastCraftedDay = TimeSystem.Instance.GetCurrentDay();
+            if (showDebugLogs) Debug.Log($"[Crafting] Marked as crafted on Day {lastCraftedDay}");
         }
         
         // Combine herb properties
@@ -343,8 +394,17 @@ public class MedicineCraftingManager : MonoBehaviour
     {
         if (craftButton != null)
         {
-            // Enable craft button if at least 1 herb selected
-            craftButton.interactable = currentSlotIndex > 0;
+            // Disable button if already crafted today
+            if (hasCraftedToday)
+            {
+                craftButton.interactable = false;
+                if (showDebugLogs) Debug.Log("[Crafting] Craft button disabled - already crafted today");
+            }
+            else
+            {
+                // Enable craft button if at least 1 herb selected
+                craftButton.interactable = currentSlotIndex > 0;
+            }
         }
     }
     
