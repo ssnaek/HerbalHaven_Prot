@@ -132,6 +132,7 @@ public class InventoryUIDisplay : MonoBehaviour
         if (iconImage != null && item.icon != null)
         {
             iconImage.sprite = item.icon;
+            iconImage.preserveAspect = true;
             iconImage.color = Color.white;
         }
 

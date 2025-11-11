@@ -258,7 +258,70 @@ public class SaveLoadManager : MonoBehaviour
             currentSave.totalHerbsCollected = totalHerbs;
         }
 
-        if (showDebugLogs) Debug.Log($"[SaveLoad] Captured game state: Day {currentSave.dayNumber}, ${currentSave.playerCurrency}, {currentSave.inventory.Count} item types");
+        // Capture pot states
+        CapturePotStates();
+
+        if (showDebugLogs) Debug.Log($"[SaveLoad] Captured game state: Day {currentSave.dayNumber}, ${currentSave.playerCurrency}, {currentSave.inventory.Count} item types, {currentSave.pots.Count} pots");
+    }
+
+    /// <summary>
+    /// Capture all pot states from PlayerPrefs (since pots may not be in current scene when saving)
+    /// </summary>
+    void CapturePotStates()
+    {
+        currentSave.pots.Clear();
+        
+        // Get list of registered pot IDs from PlayerPrefs
+        string potListJson = PlayerPrefs.GetString("RegisteredPotIDs", "");
+        if (string.IsNullOrEmpty(potListJson))
+        {
+            if (showDebugLogs) Debug.Log("[SaveLoad] No registered pot IDs found in PlayerPrefs");
+            return;
+        }
+        
+        // Parse the JSON array of pot IDs
+        try
+        {
+            PotIDList potIDList = JsonUtility.FromJson<PotIDList>(potListJson);
+            if (potIDList == null || potIDList.potIDs == null)
+            {
+                if (showDebugLogs) Debug.Log("[SaveLoad] Could not parse pot ID list");
+                return;
+            }
+            
+            // Read each pot's state from PlayerPrefs
+            foreach (string potID in potIDList.potIDs)
+            {
+                bool isPlanted = PlayerPrefs.GetInt($"Pot_{potID}_IsPlanted", 0) == 1;
+                string seedID = PlayerPrefs.GetString($"Pot_{potID}_SeedID", "");
+                int dayPlanted = PlayerPrefs.GetInt($"Pot_{potID}_DayPlanted", 0);
+                bool isFullyGrown = PlayerPrefs.GetInt($"Pot_{potID}_IsFullyGrown", 0) == 1;
+                
+                SavedPotData potData = new SavedPotData(
+                    potID,
+                    isPlanted,
+                    seedID,
+                    dayPlanted,
+                    isFullyGrown
+                );
+                currentSave.pots.Add(potData);
+            }
+            
+            if (showDebugLogs) Debug.Log($"[SaveLoad] Captured {currentSave.pots.Count} pots from PlayerPrefs");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[SaveLoad] Error parsing pot IDs: {e.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Helper class for JSON serialization of pot ID list
+    /// </summary>
+    [System.Serializable]
+    class PotIDList
+    {
+        public List<string> potIDs = new List<string>();
     }
 
     // ==================== LOAD GAME ====================
@@ -278,16 +341,24 @@ public class SaveLoadManager : MonoBehaviour
 
         try
         {
+            Debug.Log("[SaveLoad] ===== LOADING SAVE =====");
+            
+            // CLEAR PlayerPrefs first to ensure clean state
+            ClearGameStatePlayerPrefs();
+            Debug.Log("[SaveLoad] PlayerPrefs cleared before loading save");
+            
             // Read JSON
             string json = File.ReadAllText(filePath);
             currentSave = JsonUtility.FromJson<SaveData>(json);
             currentSaveFilePath = filePath;
 
-            if (showDebugLogs) Debug.Log($"[SaveLoad] âœ“ Loaded save: {currentSave.saveName} (Day {currentSave.dayNumber})");
+            Debug.Log($"[SaveLoad] Loaded save: {currentSave.saveName} (Day {currentSave.dayNumber})");
 
             // Apply save data to game systems
             LoadGameStateIntoSystems();
 
+            Debug.Log("[SaveLoad] ===== SAVE LOADED =====");
+            
             // Load Home Island scene
             SceneManager.LoadScene(homeIslandSceneName);
         }
@@ -357,7 +428,33 @@ public class SaveLoadManager : MonoBehaviour
             }
         }
 
+        // Restore pot states to PlayerPrefs for PotManager instances to load
+        RestorePotStates();
+
         if (showDebugLogs) Debug.Log($"[SaveLoad] Game state loaded into systems");
+    }
+
+    /// <summary>
+    /// Restore pot states from currentSave to PlayerPrefs for PotManager instances to read.
+    /// </summary>
+    void RestorePotStates()
+    {
+        if (currentSave == null || currentSave.pots == null)
+        {
+            if (showDebugLogs) Debug.Log("[SaveLoad] No pot data to restore");
+            return;
+        }
+
+        foreach (var potData in currentSave.pots)
+        {
+            PlayerPrefs.SetInt($"Pot_{potData.potID}_IsPlanted", potData.isPlanted ? 1 : 0);
+            PlayerPrefs.SetString($"Pot_{potData.potID}_SeedID", potData.seedID ?? "");
+            PlayerPrefs.SetInt($"Pot_{potData.potID}_DayPlanted", potData.dayPlanted);
+            PlayerPrefs.SetInt($"Pot_{potData.potID}_IsFullyGrown", potData.isFullyGrown ? 1 : 0);
+        }
+
+        PlayerPrefs.Save();
+        if (showDebugLogs) Debug.Log($"[SaveLoad] Restored {currentSave.pots.Count} pots to PlayerPrefs");
     }
 
     /// <summary>

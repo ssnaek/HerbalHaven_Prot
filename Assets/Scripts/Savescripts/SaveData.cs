@@ -26,6 +26,9 @@ public class SaveData
     // Inventory data
     public List<SavedInventoryItem> inventory = new List<SavedInventoryItem>();
     
+    // Pot data (planted seeds in garden)
+    public List<SavedPotData> pots = new List<SavedPotData>();
+    
     // Constructor
     public SaveData()
     {
@@ -38,6 +41,7 @@ public class SaveData
         previousDayHarvests = 0;
         totalHerbsCollected = 0;
         inventory = new List<SavedInventoryItem>();
+        pots = new List<SavedPotData>();
     }
 }
 
@@ -60,5 +64,27 @@ public class SavedInventoryItem
         quantity = qty;
         this.iconPath = iconPath;
         herbDataID = herbID;
+    }
+}
+
+/// <summary>
+/// Serializable pot data for saving.
+/// </summary>
+[System.Serializable]
+public class SavedPotData
+{
+    public string potID;           // Unique pot identifier
+    public bool isPlanted;         // Is there something planted?
+    public string seedID;          // What seed is planted
+    public int dayPlanted;         // When was it planted
+    public bool isFullyGrown;      // Is it ready to harvest
+    
+    public SavedPotData(string id, bool planted, string seed, int day, bool grown)
+    {
+        potID = id;
+        isPlanted = planted;
+        seedID = seed;
+        dayPlanted = day;
+        isFullyGrown = grown;
     }
 }

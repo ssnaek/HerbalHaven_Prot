@@ -219,6 +219,7 @@ public class ShopSystem : MonoBehaviour
         if (iconImage != null && item.icon != null)
         {
             iconImage.sprite = item.icon;
+            iconImage.preserveAspect = true;
             iconImage.color = Color.white;
         }
 
@@ -259,6 +260,7 @@ public class ShopSystem : MonoBehaviour
         if (itemDetailImage != null)
         {
             itemDetailImage.sprite = item.icon;
+            itemDetailImage.preserveAspect = true;
             itemDetailImage.gameObject.SetActive(item.icon != null);
         }
 

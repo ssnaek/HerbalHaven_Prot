@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// Maps a seed ID to its fully grown plant sprite and harvest data
@@ -617,6 +618,9 @@ public class PotManager : MonoBehaviour
             return;
         }
         
+        // Register this pot ID in the master list (for save system to find it)
+        RegisterPotID();
+        
         // Save individual values
         PlayerPrefs.SetInt(GetIsPlantedKey(), isPlanted ? 1 : 0);
         PlayerPrefs.SetString(GetSeedIDKey(), plantedSeedID ?? "");
@@ -628,6 +632,55 @@ public class PotManager : MonoBehaviour
         
         if (showDebugLogs)
             Debug.Log($"[PotManager] Saved state for pot '{gameObject.name}': Planted={isPlanted}, Seed={plantedSeedID}, Day={dayPlanted}, Grown={isFullyGrown}");
+    }
+    
+    /// <summary>
+    /// Register this pot's ID in the master list so SaveLoadManager can find it
+    /// </summary>
+    void RegisterPotID()
+    {
+        string potListJson = PlayerPrefs.GetString("RegisteredPotIDs", "");
+        PotIDList potIDList;
+        
+        if (string.IsNullOrEmpty(potListJson))
+        {
+            potIDList = new PotIDList();
+        }
+        else
+        {
+            try
+            {
+                potIDList = JsonUtility.FromJson<PotIDList>(potListJson);
+                if (potIDList == null)
+                {
+                    potIDList = new PotIDList();
+                }
+            }
+            catch
+            {
+                potIDList = new PotIDList();
+            }
+        }
+        
+        // Add this pot ID if not already registered
+        if (!potIDList.potIDs.Contains(potID))
+        {
+            potIDList.potIDs.Add(potID);
+            string newJson = JsonUtility.ToJson(potIDList);
+            PlayerPrefs.SetString("RegisteredPotIDs", newJson);
+            
+            if (showDebugLogs)
+                Debug.Log($"[PotManager] Registered pot ID: {potID}");
+        }
+    }
+    
+    /// <summary>
+    /// Helper class for JSON serialization of pot ID list
+    /// </summary>
+    [System.Serializable]
+    class PotIDList
+    {
+        public List<string> potIDs = new List<string>();
     }
     
     /// <summary>

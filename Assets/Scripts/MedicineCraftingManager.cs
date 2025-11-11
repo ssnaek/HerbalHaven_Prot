@@ -168,6 +168,7 @@ public class MedicineCraftingManager : MonoBehaviour
         if (herbSlots[currentSlotIndex] != null)
         {
             herbSlots[currentSlotIndex].sprite = herbData.icon;
+            herbSlots[currentSlotIndex].preserveAspect = true;
             herbSlots[currentSlotIndex].color = Color.white;
         }
         

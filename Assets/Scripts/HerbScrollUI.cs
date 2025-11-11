@@ -139,6 +139,7 @@ public class HerbScrollUI : MonoBehaviour
         if (iconImage != null && herbData.icon != null)
         {
             iconImage.sprite = herbData.icon;
+            iconImage.preserveAspect = true;
             iconImage.color = Color.white;
         }
         
