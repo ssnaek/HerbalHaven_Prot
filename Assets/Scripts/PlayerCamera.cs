@@ -36,6 +36,9 @@ public class PlayerCamera : MonoBehaviour
     private int defaultCullingMask;
     private int playerModelMask;
     private LayerMask collisionLayerMask;
+    
+    // Camera control state
+    private bool isCameraControlEnabled = false;
 
     void Start()
     {
@@ -57,6 +60,23 @@ public class PlayerCamera : MonoBehaviour
     {
         if (!target) return;
 
+        // Handle right-click toggle for camera control
+        if (Input.GetMouseButtonDown(1))
+        {
+            isCameraControlEnabled = !isCameraControlEnabled;
+            
+            if (isCameraControlEnabled)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+        }
+
         // Zoom 
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         distance -= scroll * zoomSpeed;
@@ -64,39 +84,47 @@ public class PlayerCamera : MonoBehaviour
 
         float blend = Mathf.InverseLerp(maxDistance, minDistance, distance);
 
-        // Input handling
-        if (blend > 0.95f)
+        // Input handling - only process mouse input when camera control is enabled
+        if (isCameraControlEnabled)
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-
-            float mouseX = Input.GetAxis("Mouse X") * lookSpeed;
-            float mouseY = Input.GetAxis("Mouse Y") * lookSpeed;
-
-            yaw += mouseX;
-            pitch -= mouseY;
-            pitch = Mathf.Clamp(pitch, -80f, 80f);
-
-            // Hide the PlayerModel layer for 1st person
-            cam.cullingMask = defaultCullingMask & ~playerModelMask;
-        }
-        else
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-
-            if (Input.GetMouseButton(1))
+            if (blend > 0.95f)
             {
+                // First-person mode
+                float mouseX = Input.GetAxis("Mouse X") * lookSpeed;
+                float mouseY = Input.GetAxis("Mouse Y") * lookSpeed;
+
+                yaw += mouseX;
+                pitch -= mouseY;
+                pitch = Mathf.Clamp(pitch, -80f, 80f);
+
+                // Hide the PlayerModel layer for 1st person
+                cam.cullingMask = defaultCullingMask & ~playerModelMask;
+            }
+            else
+            {
+                // Third-person mode
                 float mouseX = Input.GetAxis("Mouse X");
                 float mouseY = Input.GetAxis("Mouse Y");
 
                 yaw += mouseX * orbitSpeed * Time.deltaTime;
                 pitch -= mouseY * orbitSpeed * Time.deltaTime;
                 pitch = Mathf.Clamp(pitch, -40f, 75f);
-            }
 
-            // Show the PlayerModel layer
-            cam.cullingMask = defaultCullingMask;
+                // Show the PlayerModel layer
+                cam.cullingMask = defaultCullingMask;
+            }
+        }
+        else
+        {
+            // Camera control disabled - maintain current culling mask based on zoom level
+            if (blend > 0.95f)
+            {
+                cam.cullingMask = defaultCullingMask & ~playerModelMask;
+            }
+            else
+            {
+                cam.cullingMask = defaultCullingMask;
+            }
         }
 
         // Rotation 
