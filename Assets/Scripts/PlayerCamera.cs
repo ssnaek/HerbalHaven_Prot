@@ -21,11 +21,10 @@ public class PlayerCamera : MonoBehaviour
     public float sensitivityMultiplier = 1f;
 
     [Header("Collision Settings")]
-    public float collisionRadius = 0.2f;      // Sphere collision radius for collision check
-    public float collisionSmoothing = 5f;     // How fast camera adjusts to collisions
-    public float collisionMinDistance = 1f;   // Minimum distance when colliding with terrain
+    public float collisionRadius = 0.2f;      
+    public float collisionSmoothing = 5f;     
+    public float collisionMinDistance = 1f;   
 
-    // Actual speeds used (base * multiplier)
     private float orbitSpeed;
     private float lookSpeed;
 
@@ -36,22 +35,18 @@ public class PlayerCamera : MonoBehaviour
     private int defaultCullingMask;
     private int playerModelMask;
     private LayerMask collisionLayerMask;
-    
-    // Camera control state
-    private bool isCameraControlEnabled = false;
 
     void Start()
     {
         cam = GetComponent<Camera>();
         defaultCullingMask = cam.cullingMask;
         playerModelMask = 1 << LayerMask.NameToLayer("PlayerModel");
-        
-        // Collide with everything EXCEPT PlayerModel layer the player pack is assigned to
+
+        // Collide with everything EXCEPT PlayerModel layer
         collisionLayerMask = ~playerModelMask;
         
         currentDistance = distance;
 
-        // Load saved sensitivity
         LoadSensitivity();
         UpdateSpeeds();
     }
@@ -60,117 +55,88 @@ public class PlayerCamera : MonoBehaviour
     {
         if (!target) return;
 
-        // Handle right-click toggle for camera control
-        if (Input.GetMouseButtonDown(1))
-        {
-            isCameraControlEnabled = !isCameraControlEnabled;
-            
-            if (isCameraControlEnabled)
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
-            }
-            else
-            {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-            }
-        }
-
-        // Zoom 
+        // Zoom input
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         distance -= scroll * zoomSpeed;
         distance = Mathf.Clamp(distance, minDistance, maxDistance);
 
+        // Determine blend between 3rd and 1st person
         float blend = Mathf.InverseLerp(maxDistance, minDistance, distance);
 
-        // Input handling - only process mouse input when camera control is enabled
-        if (isCameraControlEnabled)
+        // ================= FIRST-PERSON =================
+        if (blend > 0.95f)
         {
-            if (blend > 0.95f)
-            {
-                // First-person mode
-                float mouseX = Input.GetAxis("Mouse X") * lookSpeed;
-                float mouseY = Input.GetAxis("Mouse Y") * lookSpeed;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
 
-                yaw += mouseX;
-                pitch -= mouseY;
-                pitch = Mathf.Clamp(pitch, -80f, 80f);
+            float mouseX = Input.GetAxis("Mouse X") * lookSpeed;
+            float mouseY = Input.GetAxis("Mouse Y") * lookSpeed;
 
-                // Hide the PlayerModel layer for 1st person
-                cam.cullingMask = defaultCullingMask & ~playerModelMask;
-            }
-            else
+            yaw += mouseX;
+            pitch -= mouseY;
+            pitch = Mathf.Clamp(pitch, -80f, 80f);
+
+            // Hide player model for first-person
+            cam.cullingMask = defaultCullingMask & ~playerModelMask;
+        }
+        // ================= THIRD-PERSON =================
+        else
+        {
+            // Hide cursor only while holding Right Mouse Button (RMB)
+            if (Input.GetMouseButton(1))
             {
-                // Third-person mode
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+
                 float mouseX = Input.GetAxis("Mouse X");
                 float mouseY = Input.GetAxis("Mouse Y");
 
                 yaw += mouseX * orbitSpeed * Time.deltaTime;
                 pitch -= mouseY * orbitSpeed * Time.deltaTime;
                 pitch = Mathf.Clamp(pitch, -40f, 75f);
-
-                // Show the PlayerModel layer
-                cam.cullingMask = defaultCullingMask;
-            }
-        }
-        else
-        {
-            // Camera control disabled - maintain current culling mask based on zoom level
-            if (blend > 0.95f)
-            {
-                cam.cullingMask = defaultCullingMask & ~playerModelMask;
             }
             else
             {
-                cam.cullingMask = defaultCullingMask;
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
             }
+
+            // Show the PlayerModel layer in third-person
+            cam.cullingMask = defaultCullingMask;
         }
 
-        // Rotation 
+        // ================= ROTATION & POSITION =================
         Quaternion rotation = Quaternion.Euler(pitch, yaw, 0);
-
-        //Camera Collision Detection 
         Vector3 desiredDirection = rotation * Vector3.back;
         float targetDistance = distance;
 
-        // Only check collision in third-person mode
+        // Collision check (third-person only)
         if (blend < 0.95f)
         {
-            RaycastHit hit;
-            if (Physics.SphereCast(target.position, collisionRadius, desiredDirection, 
-                out hit, distance, collisionLayerMask))
+            if (Physics.SphereCast(target.position, collisionRadius, desiredDirection, out RaycastHit hit, distance, collisionLayerMask))
             {
-                // Reduce distance to not below threshold for 1st person
                 targetDistance = Mathf.Max(hit.distance - collisionRadius, collisionMinDistance);
             }
         }
 
         currentDistance = Mathf.Lerp(currentDistance, targetDistance, Time.deltaTime * collisionSmoothing);
 
-        //Third-person offset
+        // Calculate positions
         Vector3 thirdPersonPos = target.position + rotation * new Vector3(0, 0, -currentDistance);
-
-        //First-person offset 
         Vector3 firstPersonPos = target.position;
 
-        // Blend for going from 3rd to 1st person
+        // Blend between third and first person
         transform.position = Vector3.Lerp(thirdPersonPos, firstPersonPos, blend);
         transform.rotation = rotation;
     }
 
-    // Helper for PlayerController
+    // ================= HELPER METHODS =================
     public bool IsFirstPerson()
     {
         float blend = Mathf.InverseLerp(maxDistance, minDistance, distance);
         return blend > 0.95f;
     }
 
-    // ==================== SENSITIVITY CONTROL ====================
-
-    /// <summary>
-    /// Set camera sensitivity (0.1 - 3.0)
-    /// </summary>
     public void SetSensitivity(float sensitivity)
     {
         sensitivityMultiplier = Mathf.Clamp(sensitivity, 0.1f, 3.0f);
@@ -178,35 +144,23 @@ public class PlayerCamera : MonoBehaviour
         SaveSensitivity();
     }
 
-    /// <summary>
-    /// Get current sensitivity multiplier
-    /// </summary>
     public float GetSensitivity()
     {
         return sensitivityMultiplier;
     }
 
-    /// <summary>
-    /// Update actual speeds based on base speeds and multiplier
-    /// </summary>
     void UpdateSpeeds()
     {
         orbitSpeed = baseOrbitSpeed * sensitivityMultiplier;
         lookSpeed = baseLookSpeed * sensitivityMultiplier;
     }
 
-    /// <summary>
-    /// Save sensitivity to PlayerPrefs
-    /// </summary>
     void SaveSensitivity()
     {
         PlayerPrefs.SetFloat("CameraSensitivity", sensitivityMultiplier);
         PlayerPrefs.Save();
     }
 
-    /// <summary>
-    /// Load sensitivity from PlayerPrefs
-    /// </summary>
     void LoadSensitivity()
     {
         if (PlayerPrefs.HasKey("CameraSensitivity"))
