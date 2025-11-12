@@ -30,7 +30,15 @@ Al: Welcome to our island! Have any inquiries?
     <<jump TutorialStart>>
 -> How do I see which plants I collected?
     Al: Your journal quite literally contains everything you need.
-    Al: You can press the 'J' key to open up your journal
+    Al: You can press the 'J' key to open up your journal.
+    <<jump TutorialStart>>
+-> What are the controls?
+    Al: The controls are pretty simple!
+    Al: Use the WASD keys to move around and the spacebar to jump.
+    Al: Press E to interact with NPCs and harvest herbs.
+    Al: Hold LeftShift to run faster!
+    Al: You can press the 'J' key to open up your journal.
+    Al: That should cover the basics!
     <<jump TutorialStart>>
 -> See ya.
     Al: Alrighty! If you have any questions- Just Ask Al!
