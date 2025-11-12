@@ -325,7 +325,8 @@ public class JournalController : MonoBehaviour
 
         if (InventorySystem.Instance == null) return;
 
-        List<InventoryItemData> plants = InventorySystem.Instance.GetAllItems();
+        // Get ALL discovered items (including 0 quantity) for journal display
+        List<InventoryItemData> plants = InventorySystem.Instance.GetAllDiscoveredItems();
 
         foreach (var plant in plants)
         {
@@ -357,7 +358,6 @@ public class JournalController : MonoBehaviour
         if (iconImage != null && plantData.icon != null)
         {
             iconImage.sprite = plantData.icon;
-            iconImage.preserveAspect = true;
             iconImage.color = Color.white;
         }
 
@@ -476,7 +476,6 @@ public class JournalController : MonoBehaviour
         if (plantPhoto != null)
         {
             plantPhoto.sprite = data.icon;
-            plantPhoto.preserveAspect = true;
             plantPhoto.gameObject.SetActive(data.icon != null);
         }
 

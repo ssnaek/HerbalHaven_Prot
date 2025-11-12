@@ -21,6 +21,9 @@ public class InventorySystem : MonoBehaviour
     // Main inventory storage - itemID → item data
     private Dictionary<string, InventoryItemData> inventory = new Dictionary<string, InventoryItemData>();
 
+    // Discovered items (for journal - keeps items even at 0 quantity)
+    private HashSet<string> discoveredItems = new HashSet<string>();
+
     // Currency
     private int playerCurrency = 0;
 
@@ -87,6 +90,9 @@ public class InventorySystem : MonoBehaviour
             InventoryItemData newItem = new InventoryItemData(itemID, itemName, icon, quantity, herbData);
             inventory.Add(itemID, newItem);
             
+            // Mark as discovered (so it stays in journal even at 0 quantity)
+            discoveredItems.Add(itemID);
+            
             if (showDebugLogs) Debug.Log($"[Inventory] New item added: {quantity}x {itemName}");
         }
 
@@ -116,12 +122,10 @@ public class InventorySystem : MonoBehaviour
 
         if (showDebugLogs) Debug.Log($"[Inventory] Removed {quantity}x {item.itemName}. Remaining: {item.quantity}");
 
-        if (item.quantity <= 0)
-        {
-            inventory.Remove(itemID);
-            if (showDebugLogs) Debug.Log($"[Inventory] {item.itemName} removed from inventory (quantity = 0)");
-        }
-
+        // DON'T remove from dictionary when quantity reaches 0
+        // Keep it so journal can still display it
+        // Item is marked as "discovered" so journal knows to show it
+        
         onItemRemovedCallback?.Invoke(itemID, quantity);
         onInventoryChangedCallback?.Invoke();
 
@@ -130,7 +134,15 @@ public class InventorySystem : MonoBehaviour
 
     public bool HasItem(string itemID)
     {
-        return inventory.ContainsKey(itemID);
+        return inventory.ContainsKey(itemID) && inventory[itemID].quantity > 0;
+    }
+
+    /// <summary>
+    /// Check if item has been discovered (even if quantity is 0)
+    /// </summary>
+    public bool HasDiscoveredItem(string itemID)
+    {
+        return discoveredItems.Contains(itemID);
     }
 
     public int GetItemQuantity(string itemID)
@@ -144,6 +156,14 @@ public class InventorySystem : MonoBehaviour
     }
 
     public List<InventoryItemData> GetAllItems()
+    {
+        return new List<InventoryItemData>(inventory.Values);
+    }
+
+    /// <summary>
+    /// Get all discovered items (including those with 0 quantity for journal display)
+    /// </summary>
+    public List<InventoryItemData> GetAllDiscoveredItems()
     {
         return new List<InventoryItemData>(inventory.Values);
     }
